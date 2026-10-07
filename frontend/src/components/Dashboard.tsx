@@ -12,7 +12,7 @@ import {
   Globe,
   ExternalLink,
 } from "lucide-react";
-import { ContainerItem, SystemMetrics, groupContainers } from "../types";
+import { ContainerItem, SystemMetrics, groupContainers, getPrimaryWebUrl } from "../types";
 import { api } from "../api";
 
 interface DashboardProps {
@@ -190,16 +190,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   });
                 };
 
-                const webPort =
-                  g.ports.find((p) => (p.public_port || p.private_port) === 3000) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 5173) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 80) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 8000) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 8080) ||
-                  g.ports[0];
-                const targetUrl = webPort
-                  ? `http://localhost:${webPort.public_port || webPort.private_port}`
-                  : null;
+                const targetUrl = getPrimaryWebUrl(g);
 
                 return (
                   <div

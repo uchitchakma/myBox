@@ -12,7 +12,7 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
-import { ContainerItem, groupContainers, ContainerGroup } from "../types";
+import { ContainerItem, groupContainers, ContainerGroup, getPrimaryWebUrl } from "../types";
 import { api } from "../api";
 
 interface ContainersViewProps {
@@ -156,16 +156,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
             <tbody className="divide-y divide-zinc-800/60">
               {filteredGroups.map((g) => {
                 const isExpanded = expandedGroups[g.key] ?? true;
-                const webPort =
-                  g.ports.find((p) => (p.public_port || p.private_port) === 3000) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 5173) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 80) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 8000) ||
-                  g.ports.find((p) => (p.public_port || p.private_port) === 8080) ||
-                  g.ports[0];
-                const targetUrl = webPort
-                  ? `http://localhost:${webPort.public_port || webPort.private_port}`
-                  : null;
+                const targetUrl = getPrimaryWebUrl(g);
 
                 if (g.isGroup) {
                   return (

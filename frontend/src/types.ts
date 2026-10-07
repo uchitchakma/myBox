@@ -201,4 +201,54 @@ export function groupContainers(containers: ContainerItem[]): ContainerGroup[] {
   return groups;
 }
 
+export function getPrimaryWebUrl(group: ContainerGroup): string | null {
+  if (!group.services || group.services.length === 0) return null;
+
+  // 1. Look for explicit frontend / web / client / node service
+  const frontendService = group.services.find((s) => {
+    const n = s.name.toLowerCase();
+    const img = s.image.toLowerCase();
+    return (
+      n.includes("front") ||
+      n.includes("client") ||
+      n.includes("web") ||
+      n.includes("ui") ||
+      n.includes("app") ||
+      img.includes("node") ||
+      img.includes("react") ||
+      img.includes("vite") ||
+      img.includes("next")
+    );
+  });
+
+  if (frontendService && frontendService.ports.length > 0) {
+    const p = frontendService.ports[0];
+    return `http://localhost:${p.public_port || p.private_port}`;
+  }
+
+  // 2. Look for standard web frontend port ranges (3000-3050, 5173-5200, 80, 443)
+  const webPort = group.ports.find((p) => {
+    const port = p.public_port || p.private_port;
+    return (
+      (port >= 3000 && port <= 3050) ||
+      (port >= 5173 && port <= 5200) ||
+      port === 80 ||
+      port === 443
+    );
+  });
+
+  if (webPort) {
+    return `http://localhost:${webPort.public_port || webPort.private_port}`;
+  }
+
+  // 3. Fallback to any active port
+  if (group.ports.length > 0) {
+    const p = group.ports[0];
+    return `http://localhost:${p.public_port || p.private_port}`;
+  }
+
+  return null;
+}
+
+
 
