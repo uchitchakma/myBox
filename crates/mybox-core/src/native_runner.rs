@@ -51,8 +51,12 @@ impl NativeRunner {
             anyhow::bail!("Project directory does not exist: {}", project_path);
         }
 
-        // Stop any previously running native services for this project first
+        // Stop and clean up any previously running native services for this project first
         let _ = runner.stop_all_for_project(project_path).await;
+        {
+            let mut services = runner.services.write().await;
+            services.retain(|_, s| s.project_path != project_path);
+        }
 
         let has_frontend_dir = root.join("frontend").is_dir() || root.join("client").is_dir() || root.join("web").is_dir();
         let has_backend_dir = root.join("backend").is_dir() || root.join("server").is_dir() || root.join("api").is_dir();
@@ -243,26 +247,15 @@ fn get_system_path() -> String {
         cmd.stderr(Stdio::piped());
         cmd.env("PATH", &enhanced_path);
 
+        #[cfg(unix)]
+        cmd.process_group(0);
+
         if let Ok(home) = std::env::var("HOME") {
             cmd.env("HOME", home);
         }
 
         for (k, v) in &env_vars {
             cmd.env(k, v);
-        }
-
-        // Ensure port is free from any orphan processes before starting
-        #[cfg(unix)]
-        if port > 0 {
-            let port_str = format!(":{}", port);
-            if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &port_str]).output() {
-                let pids = String::from_utf8_lossy(&out.stdout);
-                for p in pids.lines() {
-                    if let Ok(orphan_pid) = p.trim().parse::<u32>() {
-                        let _ = std::process::Command::new("kill").args(["-9", &orphan_pid.to_string()]).output();
-                    }
-                }
-            }
         }
 
         let mut child = cmd.spawn().context(format!("Failed to start service process for {}", name))?;
@@ -353,28 +346,6 @@ fn get_system_path() -> String {
                 }
             }
 
-            // Port-aware listening check (if child process replaced PID or spawned worker)
-            if !is_running && svc.port > 0 {
-                #[cfg(unix)]
-                {
-                    let port_str = format!(":{}", svc.port);
-                    if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &port_str]).output() {
-                        let pids = String::from_utf8_lossy(&out.stdout);
-                        if let Some(first_line) = pids.lines().next() {
-                            if let Ok(port_pid) = first_line.trim().parse::<u32>() {
-                                svc.pid = Some(port_pid);
-                                is_running = true;
-                                let sys_pid = sysinfo::Pid::from_u32(port_pid);
-                                if let Some(proc_info) = sys.process(sys_pid) {
-                                    cpu = proc_info.cpu_usage() as f64;
-                                    mem_mb = (proc_info.memory() as f64) / (1024.0 * 1024.0);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             svc.is_running = is_running;
 
             let status_label = if is_running {
@@ -422,25 +393,14 @@ fn get_system_path() -> String {
             if let Some(pid) = svc.pid {
                 #[cfg(unix)]
                 {
-                    let _ = std::process::Command::new("kill").args(["-15", &pid.to_string()]).output();
-                    let _ = std::process::Command::new("kill").args(["-9", &pid.to_string()]).output();
+                    let _ = std::process::Command::new("kill").args(["-TERM", &format!("-{}", pid)]).output();
+                    let _ = std::process::Command::new("kill").args(["-TERM", &pid.to_string()]).output();
+                    let _ = std::process::Command::new("kill").args(["-KILL", &format!("-{}", pid)]).output();
+                    let _ = std::process::Command::new("kill").args(["-KILL", &pid.to_string()]).output();
                 }
                 #[cfg(windows)]
                 {
                     let _ = std::process::Command::new("taskkill").args(["/PID", &pid.to_string(), "/F", "/T"]).output();
-                }
-            }
-
-            #[cfg(unix)]
-            if svc.port > 0 {
-                let port_str = format!(":{}", svc.port);
-                if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &port_str]).output() {
-                    let pids = String::from_utf8_lossy(&out.stdout);
-                    for p in pids.lines() {
-                        if let Ok(orphan_pid) = p.trim().parse::<u32>() {
-                            let _ = std::process::Command::new("kill").args(["-9", &orphan_pid.to_string()]).output();
-                        }
-                    }
                 }
             }
 
@@ -502,7 +462,10 @@ fn get_system_path() -> String {
                 if let Some(pid) = svc.pid {
                     #[cfg(unix)]
                     {
-                        let _ = std::process::Command::new("kill").args(["-15", &pid.to_string()]).output();
+                        let _ = std::process::Command::new("kill").args(["-TERM", &format!("-{}", pid)]).output();
+                        let _ = std::process::Command::new("kill").args(["-TERM", &pid.to_string()]).output();
+                        let _ = std::process::Command::new("kill").args(["-KILL", &format!("-{}", pid)]).output();
+                        let _ = std::process::Command::new("kill").args(["-KILL", &pid.to_string()]).output();
                     }
                     #[cfg(windows)]
                     {

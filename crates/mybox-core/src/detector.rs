@@ -30,9 +30,14 @@ impl FrameworkDetector {
             } else {
                 ("mybox.yml", std::fs::read_to_string(root.join("mybox.yml")).unwrap_or_default())
             };
+            let folder_name = root
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("myBox Project")
+                .to_string();
             return DetectedProject {
                 framework_id: "custom_mybox".into(),
-                name: "Existing myBox Project".into(),
+                name: folder_name,
                 category: "Custom Configuration".into(),
                 description: format!("Existing {} configuration detected in project root", file_name),
                 default_port: 3000,
