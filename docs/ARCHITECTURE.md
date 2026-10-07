@@ -1,6 +1,6 @@
 # 🏛️ myBox System Architecture
 
-This document provides a technical deep-dive into the architectural design of **myBox**, explaining how the Rust core engine, headless CLI, Tauri desktop application, and React frontend operate together with minimal resource usage.
+This document provides a technical deep-dive into the architectural design of **myBox**, explaining how the Rust core engine, headless CLI, Tauri desktop application, Framework Auto-Detection Engine, and React frontend operate together with ultra-minimal resource consumption.
 
 ---
 
@@ -10,7 +10,7 @@ This document provides a technical deep-dive into the architectural design of **
 ┌────────────────────────────────────────────────────────────────────────┐
 │                          DESKTOP USER (GUI)                            │
 │                     React 18 + Tailwind UI (Vite)                      │
-│                Primary Color: #C5453E | Glassmorphism                  │
+│         Primary Color: #C5453E | Glassmorphism | mybox.yaml Editor     │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ Tauri 2.0 IPC Invoke Bridge
 ┌───────────────────────────────────▼────────────────────────────────────┐
@@ -24,8 +24,9 @@ This document provides a technical deep-dive into the architectural design of **
 ┌───────────────────────────────────▼────────────────────────────────────┐
 │                          CORE ENGINE CRATE                             │
 │                         (crates/mybox-core)                            │
-│  • Socket Discovery & Health Check   • Docker / Podman / containerd    │
-│  • System Hardware Metrics (sysinfo) • Container & Storage Lifecycle   │
+│  • Framework Auto-Detector (detector.rs) • Project Lifecycle & Unbox   │
+│  • Socket Discovery & Health Checks      • Hypervisor Engine Bridge    │
+│  • System Hardware Metrics (sysinfo)     • Storage & Volume Management │
 └───────────────────────────────────▲────────────────────────────────────┘
                                     │
                                     │ Rust Internal Crate Link
@@ -33,7 +34,7 @@ This document provides a technical deep-dive into the architectural design of **
 ┌───────────────────────────────────┴────────────────────────────────────┐
 │                          HEADLESS CLI CRATE                            │
 │                          (crates/mybox-cli)                            │
-│                `mybox` Terminal Executable for Servers                 │
+│           `mybox` Executable: init, up, down, unbox, ps, stats         │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,30 +43,71 @@ This document provides a technical deep-dive into the architectural design of **
 ## 📦 Workspace Crates Breakdown
 
 ### 1. `mybox-core` (Shared Engine)
-* **Role:** The foundational library containing all domain models, container socket clients, and hardware metric collectors.
+The foundational library containing all domain models, framework analysis algorithms, container socket clients, and hardware metric collectors.
+
 * **Key Modules:**
-  * `docker.rs`: Intelligent multi-runtime socket discovery. Scans `/var/run/docker.sock`, OrbStack, Colima, rootless Podman paths, and Windows named pipes (`//./pipe/docker_engine`).
-  * `stats.rs`: High-efficiency hardware metrics gathering via `sysinfo` without triggering unnecessary garbage collection or memory allocations.
-  * `models.rs`: Strongly-typed serializable structs for containers, images, volumes, ports, and logs.
-  * `config.rs`: Persistent JSON configuration handling in standard OS user config directories.
+  * **`detector.rs` (Intelligent Framework Detection Engine):**
+    * Scans project root manifests (`package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `pom.xml`, `manage.py`, `pubspec.yaml`, etc.).
+    * Detects single-service frameworks (Next.js, Django, FastAPI, React, Laravel, Rust, Go, Flutter, .NET, Spring Boot) and multi-tier architectures (`frontend/` + `backend/` + PostgreSQL + Redis).
+    * Dynamically synthesizes production-ready `mybox.yaml` configuration.
+  * **`project.rs` (Project Lifecycle & Unboxing Engine):**
+    * Orchestrates container sandboxes with `mybox up` and `mybox down`.
+    * Implements `remove_project` ("Unboxing") to cleanly shut down active containers and delete `mybox.yaml`.
+  * **`docker.rs` (Hypervisor Engine Connection):**
+    * Multi-socket auto-discovery across Linux unix sockets, macOS OrbStack/Colima paths, rootless engines, and Windows named pipes (`//./pipe/docker_engine`).
+  * **`stats.rs`:** High-efficiency hardware metrics gathering via `sysinfo` without memory allocations.
+  * **`models.rs`:** Serializable Rust structs for containers, images, volumes, ports, and detected projects.
+
+---
 
 ### 2. `mybox-cli` (Headless CLI)
-* **Role:** A standalone binary compiled to native machine code (`mybox`) intended for servers, CI/CD runners, and developer terminal workflows.
-* **Features:** Formatted ANSI tables with `#C5453E` custom color accents, interactive spinners (`indicatif`), and a daemon mode (`mybox server`).
+A standalone binary compiled to native machine code (`mybox`) intended for servers, CI/CD runners, and developer terminals.
+* **Commands:**
+  * `mybox init` / `mybox detect`: Framework auto-detection and `mybox.yaml` generation.
+  * `mybox up`: Start project sandboxes.
+  * `mybox down`: Stop project sandboxes.
+  * `mybox unbox`: De-containerize project (stop containers and delete `mybox.yaml`).
+  * `mybox ps`: Colorized container status table.
+  * `mybox exec` / `mybox sh`: Interactive container shells and ad-hoc commands.
+  * `mybox prune`: Reclaim disk space.
+  * `mybox server`: Background health-monitoring daemon.
+
+---
 
 ### 3. `mybox-desktop` (Tauri 2.0 GUI)
-* **Role:** The desktop application wrapper utilizing native OS web engines:
-  * **macOS:** Native WebKit (Safari engine)
-  * **Windows:** WebView2 (Microsoft Edge Chromium engine)
-  * **Linux / Ubuntu:** WebKitGTK
+The desktop application wrapper utilizing native OS web engines:
+* **macOS:** Native WebKit (Safari engine)
+* **Windows:** WebView2 (Microsoft Edge Chromium engine)
+* **Linux / Ubuntu:** WebKitGTK
 * **Memory Footprint:** ~25MB total RAM usage on idle, freeing host resources for developer workloads.
+
+---
+
+## 📋 Standard Configuration Format: `mybox.yaml`
+
+All projects are configured using standard `mybox.yaml`:
+
+```yaml
+# Generated by myBox (https://ucdreams.com)
+version: '3.8'
+
+services:
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    command: npm run dev
+```
 
 ---
 
 ## ⚡ Zero-Idle Efficiency Model
 
 Standard container desktop apps leave heavy background Chromium and node daemons running at all times. In myBox:
-1. **Event-Driven Polling:** Metrics refresh on a configurable interval (default: 3 seconds) and can pause when minimized.
+1. **Event-Driven Polling:** Metrics refresh on a configurable interval (default: 3 seconds) and pause when minimized.
 2. **Native WebViews:** No bundled Chromium binaries in installer packages.
 3. **Rust Concurrency:** All socket operations leverage `tokio` asynchronous I/O to avoid blocking main threads.
 
@@ -74,4 +116,5 @@ Standard container desktop apps leave heavy background Chromium and node daemons
 ## 🏢 Creators & Maintainers
 * **Company:** [UCDREAMS TECHNOLOGIES LLP](https://ucdreams.com)
 * **Lead Developer:** [Uchit Chakma](https://uchitchakma.com)
+* **Website:** [ucdreams.com](https://ucdreams.com) • [uchitchakma.com](https://uchitchakma.com)
 * **Open Source Repository:** [https://github.com/uchitchakma/myBox](https://github.com/uchitchakma/myBox)
