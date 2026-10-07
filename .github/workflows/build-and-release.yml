@@ -1,0 +1,106 @@
+name: "Build & Release myBox"
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-cli:
+    name: "Build CLI (${{ matrix.platform.os_name }})"
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os_name: macOS-x86_64
+            os: macos-13
+            target: x86_64-apple-darwin
+            bin: mybox
+          - os_name: macOS-aarch64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            bin: mybox
+          - os_name: Ubuntu-x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bin: mybox
+          - os_name: Windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: mybox.exe
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: Build myBox CLI
+        run: cargo build --release --target ${{ matrix.platform.target }} -p mybox-cli
+
+      - name: Upload CLI Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mybox-cli-${{ matrix.platform.os_name }}
+          path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+
+  build-desktop:
+    name: "Build Desktop App (${{ matrix.platform.os_name }})"
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os_name: macOS-Universal
+            os: macos-latest
+          - os_name: Ubuntu-x86_64
+            os: ubuntu-22.04
+          - os_name: Windows-x86_64
+            os: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies (Ubuntu)
+        if: matrix.platform.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci || npm install
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Build Tauri Desktop App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/mybox-desktop
+          tagName: mybox-v__VERSION__
+          releaseName: "myBox v__VERSION__"
+          releaseBody: "See the assets below to download myBox for macOS, Windows, and Ubuntu/Linux."
+          releaseDraft: true
+          prerelease: false

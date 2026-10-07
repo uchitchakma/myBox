@@ -1,0 +1,22 @@
+[package]
+name = "mybox-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Uchit Chakma <contact@uchitchakma.com>", "UCDREAMS TECHNOLOGIES LLP <contact@ucdreams.com>"]
+description = "Core lightweight container engine and monitoring library for myBox"
+license = "MIT"
+repository = "https://github.com/uchitchakma/myBox"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.38", features = ["full"] }
+bollard = "0.18"
+sysinfo = "0.33"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+anyhow = "1.0"
+futures-util = "0.3"
+dirs = "5.0"
+log = "0.4"
+env_logger = "0.11"
