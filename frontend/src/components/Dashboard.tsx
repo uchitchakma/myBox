@@ -10,7 +10,7 @@ import {
   Terminal,
   Rocket,
 } from "lucide-react";
-import { ContainerItem, SystemMetrics } from "../types";
+import { ContainerItem, SystemMetrics, groupContainers } from "../types";
 
 interface DashboardProps {
   metrics: SystemMetrics | null;
@@ -171,63 +171,87 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              {containers.slice(0, 5).map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 transition"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        c.is_running ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"
-                      }`}
-                    />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-white">
-                          {c.name}
-                        </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">
-                          {c.short_id}
-                        </span>
+              {groupContainers(containers).slice(0, 5).map((g) => {
+                const isRunning = g.is_running;
+                const primaryService = g.services[0];
+
+                const handlePlay = () => {
+                  g.services.forEach((s) => {
+                    if (!s.is_running) onStart(s.id);
+                  });
+                };
+
+                const handleStop = () => {
+                  g.services.forEach((s) => {
+                    if (s.is_running) onStop(s.id);
+                  });
+                };
+
+                return (
+                  <div
+                    key={g.key}
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 transition"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          isRunning ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-zinc-600"
+                        }`}
+                      />
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-white">
+                            {g.projectName}
+                          </span>
+                          {g.isGroup ? (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-400 border border-brand-500/20 font-semibold">
+                              Stack ({g.services.length} services)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">
+                              {primaryService.short_id}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">{g.image}</p>
                       </div>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">{c.image}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[11px] text-zinc-400 mr-2 hidden sm:inline">
+                        {g.status}
+                      </span>
+
+                      <button
+                        onClick={() => onOpenLogs(primaryService)}
+                        title="View logs"
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+
+                      {isRunning ? (
+                        <button
+                          onClick={handleStop}
+                          title={g.isGroup ? "Stop entire stack" : "Stop container"}
+                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition"
+                        >
+                          <Square className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handlePlay}
+                          title={g.isGroup ? "Play & Run entire stack" : "Start container"}
+                          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition font-bold text-xs"
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                          {g.isGroup && <span>Run All</span>}
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[11px] text-zinc-400 mr-2 hidden sm:inline">
-                      {c.status}
-                    </span>
-
-                    <button
-                      onClick={() => onOpenLogs(c)}
-                      title="View container logs"
-                      className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                    </button>
-
-                    {c.is_running ? (
-                      <button
-                        onClick={() => onStop(c.id)}
-                        title="Stop container"
-                        className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition"
-                      >
-                        <Square className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => onStart(c.id)}
-                        title="Start container"
-                        className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition"
-                      >
-                        <Play className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

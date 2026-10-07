@@ -216,6 +216,8 @@ impl DockerEngine {
                         })
                         .collect();
 
+                    let project_name = c.labels.as_ref().and_then(|l| l.get("com.docker.compose.project").cloned());
+
                     containers.push(ContainerItem {
                         id,
                         short_id,
@@ -230,6 +232,7 @@ impl DockerEngine {
                         memory_limit_mb: 0.0,
                         memory_percent: 0.0,
                         is_running,
+                        project_name,
                     });
                 }
             }

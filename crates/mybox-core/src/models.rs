@@ -15,6 +15,8 @@ pub struct ContainerItem {
     pub memory_limit_mb: f64,
     pub memory_percent: f64,
     pub is_running: bool,
+    #[serde(default)]
+    pub project_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -19,6 +19,7 @@ export interface ContainerItem {
   memory_limit_mb: number;
   memory_percent: number;
   is_running: boolean;
+  project_name?: string;
 }
 
 export interface ImageItem {
@@ -120,4 +121,84 @@ export interface DetectedProject {
   generated_yaml: string;
   services: DetectedService[];
 }
+
+export interface ContainerGroup {
+  key: string;
+  projectName: string;
+  isGroup: boolean;
+  services: ContainerItem[];
+  is_running: boolean;
+  ports: PortMapping[];
+  status: string;
+  image: string;
+}
+
+export function groupContainers(containers: ContainerItem[]): ContainerGroup[] {
+  const map = new Map<string, ContainerItem[]>();
+  const standalone: ContainerItem[] = [];
+
+  for (const c of containers) {
+    if (c.project_name) {
+      const list = map.get(c.project_name) || [];
+      list.push(c);
+      map.set(c.project_name, list);
+    } else {
+      standalone.push(c);
+    }
+  }
+
+  const groups: ContainerGroup[] = [];
+
+  for (const [pName, services] of map.entries()) {
+    if (services.length > 1) {
+      const isAnyRunning = services.some((s) => s.is_running);
+      const isAllRunning = services.every((s) => s.is_running);
+      const runningCount = services.filter((s) => s.is_running).length;
+      const allPorts = services.flatMap((s) => s.ports);
+
+      groups.push({
+        key: `group-${pName}`,
+        projectName: pName,
+        isGroup: true,
+        services,
+        is_running: isAnyRunning,
+        ports: allPorts,
+        status: isAllRunning
+          ? `Running (${services.length}/${services.length} services)`
+          : isAnyRunning
+          ? `Partially Running (${runningCount}/${services.length})`
+          : `Exited (${services.length} services)`,
+        image: `Stack (${services.map((s) => s.name).join(" + ")})`,
+      });
+    } else if (services.length === 1) {
+      const c = services[0];
+      groups.push({
+        key: c.id,
+        projectName: pName,
+        isGroup: false,
+        services: [c],
+        is_running: c.is_running,
+        ports: c.ports,
+        status: c.status,
+        image: c.image,
+      });
+    }
+  }
+
+  for (const c of standalone) {
+    groups.push({
+      key: c.id,
+      projectName: c.name,
+      isGroup: false,
+      services: [c],
+      is_running: c.is_running,
+      ports: c.ports,
+      status: c.status,
+      image: c.image,
+    });
+  }
+
+  return groups;
+}
+
 

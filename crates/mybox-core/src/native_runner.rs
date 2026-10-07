@@ -342,6 +342,11 @@ fn get_system_path() -> String {
 
             let state_label = if is_running { "running" } else { "exited" };
 
+            let p_name = std::path::Path::new(&svc.project_path)
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|s| s.to_string());
+
             items.push(ContainerItem {
                 id: svc.id.clone(),
                 short_id: svc.short_id.clone(),
@@ -361,6 +366,7 @@ fn get_system_path() -> String {
                 memory_limit_mb: 2048.0,
                 memory_percent: ((mem_mb / 2048.0) * 100.0 * 10.0).round() / 10.0,
                 is_running,
+                project_name: p_name,
             });
         }
 
