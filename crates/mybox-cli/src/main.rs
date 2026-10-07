@@ -69,7 +69,6 @@ enum Commands {
     Images,
 
     /// Remove an image
-    #[command(alias = "rmi")]
     Rmi {
         /// Image ID or Tag
         image: String,

@@ -43,10 +43,15 @@ export const VolumesView: React.FC<VolumesViewProps> = ({ volumes }) => {
       {/* Volumes Table */}
       <div className="glass-panel rounded-2xl overflow-hidden border border-zinc-800">
         {filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <HardDrive className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-zinc-300">
-              No volumes found
+          <div className="p-12 text-center flex flex-col items-center">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mb-3">
+              <HardDrive className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-semibold text-zinc-200">
+              No persistent volumes active
+            </p>
+            <p className="text-xs text-zinc-400 mt-1.5 max-w-md">
+              In <strong className="text-brand-400 font-medium">Native Mode</strong>, sandboxes read and write directly to your project workspace files without requiring virtual storage overlays.
             </p>
           </div>
         ) : (
