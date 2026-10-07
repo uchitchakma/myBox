@@ -719,3 +719,180 @@ volumes:
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn create_temp_dir(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("mybox_test_{}_{}", name, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn test_detect_nextjs() {
+        let dir = create_temp_dir("nextjs");
+        fs::write(dir.join("package.json"), r#"{"dependencies": {"next": "^14.0.0", "react": "^18"}}"#).unwrap();
+        fs::write(dir.join("next.config.js"), "module.exports = {};").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "nextjs");
+        assert_eq!(res.default_port, 3000);
+        assert_eq!(res.runtime_image, "node:20-alpine");
+        assert!(res.generated_yaml.contains("node:20-alpine"));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_react_vite() {
+        let dir = create_temp_dir("vite");
+        fs::write(dir.join("package.json"), r#"{"dependencies": {"react": "^18"}, "devDependencies": {"vite": "^5"}}"#).unwrap();
+        fs::write(dir.join("vite.config.ts"), "export default {};").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "vite");
+        assert_eq!(res.default_port, 5173);
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_django() {
+        let dir = create_temp_dir("django");
+        fs::write(dir.join("manage.py"), "#!/usr/bin/env python\nimport os\n").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "django");
+        assert_eq!(res.default_port, 8000);
+        assert_eq!(res.runtime_image, "python:3.12-slim");
+        assert!(res.generated_yaml.contains("manage.py runserver"));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_fastapi() {
+        let dir = create_temp_dir("fastapi");
+        fs::write(dir.join("requirements.txt"), "fastapi==0.110.0\nuvicorn==0.28.0\n").unwrap();
+        fs::write(dir.join("main.py"), "from fastapi import FastAPI\napp = FastAPI()\n").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "python");
+        assert_eq!(res.default_port, 8000);
+        assert!(res.generated_yaml.contains("uvicorn main:app"));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_laravel() {
+        let dir = create_temp_dir("laravel");
+        fs::write(dir.join("artisan"), "#!/usr/bin/env php\n").unwrap();
+        fs::write(dir.join("composer.json"), r#"{"require": {"laravel/framework": "^11.0"}}"#).unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "laravel");
+        assert_eq!(res.default_port, 8000);
+        assert_eq!(res.runtime_image, "php:8.3-cli-alpine");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_wordpress() {
+        let dir = create_temp_dir("wordpress");
+        fs::write(dir.join("wp-config.php"), "<?php define('DB_NAME', 'wp');").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "wordpress");
+        assert_eq!(res.default_port, 8080);
+        assert!(res.is_multi_service);
+        assert_eq!(res.services.len(), 2); // wordpress + db
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_ruby_rails() {
+        let dir = create_temp_dir("rails");
+        fs::write(dir.join("Gemfile"), "source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "ruby");
+        assert_eq!(res.default_port, 3000);
+        assert_eq!(res.runtime_image, "ruby:3.3-alpine");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_rust() {
+        let dir = create_temp_dir("rust");
+        fs::write(dir.join("Cargo.toml"), "[package]\nname = \"test_app\"\nversion = \"0.1.0\"\n").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "rust");
+        assert_eq!(res.default_port, 8080);
+        assert_eq!(res.runtime_image, "rust:1.77-alpine");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_go() {
+        let dir = create_temp_dir("golang");
+        fs::write(dir.join("go.mod"), "module example.com/myapp\n\ngo 1.22\n").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "go");
+        assert_eq!(res.default_port, 8080);
+        assert_eq!(res.runtime_image, "golang:1.22-alpine");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_spring_boot() {
+        let dir = create_temp_dir("springboot");
+        fs::write(dir.join("pom.xml"), "<project><parent><artifactId>spring-boot-starter-parent</artifactId></parent></project>").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "springboot");
+        assert_eq!(res.default_port, 8080);
+        assert_eq!(res.runtime_image, "eclipse-temurin:21-alpine");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_dotnet() {
+        let dir = create_temp_dir("dotnet");
+        fs::write(dir.join("MyApp.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "dotnet");
+        assert_eq!(res.default_port, 5000);
+        assert_eq!(res.runtime_image, "mcr.microsoft.com/dotnet/sdk:8.0-alpine");
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_flutter() {
+        let dir = create_temp_dir("flutter");
+        fs::write(dir.join("pubspec.yaml"), "name: flutter_app\nflutter:\n  uses-material-design: true\n").unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "flutter");
+        assert_eq!(res.default_port, 8080);
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_detect_multi_service() {
+        let dir = create_temp_dir("multiservice");
+        fs::create_dir_all(dir.join("frontend")).unwrap();
+        fs::create_dir_all(dir.join("backend")).unwrap();
+
+        let res = FrameworkDetector::detect(dir.to_str().unwrap());
+        assert_eq!(res.framework_id, "fullstack_multi");
+        assert!(res.is_multi_service);
+        assert_eq!(res.services.len(), 4); // frontend, backend, database, cache
+        assert!(res.generated_yaml.contains("postgres:16-alpine"));
+        assert!(res.generated_yaml.contains("redis:7.2-alpine"));
+        let _ = fs::remove_dir_all(dir);
+    }
+}
+
