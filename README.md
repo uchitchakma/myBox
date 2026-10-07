@@ -17,7 +17,7 @@
 
 ## 🌟 What is myBox?
 
-**myBox** is an open-source, ultra-lightweight container tool that lets you **run, containerize, and manage any project in isolated sandboxes** without polluting your machine with multiple language versions, database installs, or conflicting dependencies.
+**myBox** is an open-source, ultra-lightweight container tool that lets you **run, containerize, auto-detect, and manage any project in isolated sandboxes** without polluting your machine with multiple language versions, database installs, or conflicting dependencies.
 
 Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written in **Rust** and **Tauri 2.0**, using only **~25MB of RAM** with instant sub-second startup!
 
@@ -32,30 +32,27 @@ Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written 
 
 | Task | Desktop App (GUI) | CLI (`mybox`) |
 | :--- | :--- | :--- |
-| **Launch Project** | Click `🚀 Launch Project` ➔ Pick folder ➔ Click Launch | `cd my-project && mybox up` |
+| **Auto-Detect & Init** | Select folder in Launch Wizard ➔ Auto-configures | `mybox init` (or `mybox detect`) |
+| **Launch Project** | Click `🚀 Launch Project` ➔ Pick folder ➔ Click Launch | `mybox up` |
+| **Stop Project** | Click `Stop` button | `mybox down` |
+| **Unbox / De-containerize** | Click `Unbox Project` in Wizard ➔ Confirm | `mybox unbox` (or `mybox remove-project`) |
 | **List Containers** | View **Dashboard** or **Containers** tab | `mybox ps` (or `mybox ps -a`) |
-| **Run command inside** | Open container logs/terminal | `mybox exec <name> <cmd>` |
+| **Run command inside** | Open container terminal / logs | `mybox exec <name> <cmd>` |
 | **Live Shell** | Click terminal icon | `mybox exec <name>` (or `mybox sh <name>`) |
 | **Stream Live Logs** | Click `Logs` button next to any container | `mybox logs <name> --tail 50` |
-| **Stop Project** | Click `Stop` button | `mybox down` (or `mybox stop <name>`) |
-| **Restart** | Click `Restart` button | `mybox restart <name>` |
 | **Reclaim Disk Space** | Click `Prune System` button (Top Header) | `mybox prune` |
 | **View System Stats** | Visual CPU & RAM graphs in Header / Stats tab | `mybox stats` |
 
 ---
 
-## 🚀 How to Containerize & Run Any Project (In 2 Minutes)
+## 🚀 How to Containerize Any Project (In 2 Minutes)
 
 ### Option 1: Using the Desktop App (macOS & Windows)
 1. Open **myBox**.
-2. Click the crimson **`🚀 Launch Project`** button (in Sidebar or Header).
+2. Click the crimson **`🚀 Launch Project`** button.
 3. Click **`📁 Select`** (or *Browse Finder*) to pick your project folder.
-4. Choose your tech stack:
-   * 📦 **Fullstack + Database** (Node.js/Next.js + PostgreSQL 16)
-   * ⚡ **Node.js / React / Next** (Alpine Linux runtime)
-   * 🐍 **Python / FastAPI / Django** (Python 3.12 Slim runtime)
-   * 🐘 **PHP / Laravel / WordPress** (PHP 8.3 + Apache runtime)
-5. Click **`Launch in myBox`** — **myBox automatically creates the configuration, starts the sandbox, and connects the ports!**
+4. **myBox automatically inspects your codebase** (detects Next.js, Django, FastAPI, React, Laravel, Rails, Rust, Go, Flutter, .NET, Spring, and multi-service fullstack architectures).
+5. Click **`Launch in myBox`** — **myBox creates `mybox.yaml`, starts the sandbox, and connects the ports!**
 
 ---
 
@@ -64,17 +61,41 @@ Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written 
 # 1. Navigate to your project folder
 cd ~/my-projects/my-web-app
 
-# 2. Launch all project containers
+# 2. Auto-detect framework and generate mybox.yaml
+mybox init
+
+# 3. Launch all project containers
 mybox up
 
-# 3. Check status
+# 4. Check status & logs
 mybox ps
-
-# 4. View live logs
 mybox logs my-web-app
 
 # 5. Stop when finished
 mybox down
+```
+
+---
+
+## 🗑️ How to Remove & De-containerize (Unboxing)
+
+If you ever want to revert a project and remove containerization:
+
+### 1. In the Desktop App:
+* Open the **Launch Project** modal, select your folder, and click **`Unbox Project`** (or *De-containerize*).
+* Confirm the prompt — myBox will gracefully stop running containers and delete `mybox.yaml`.
+
+### 2. In the CLI:
+```bash
+# De-containerize current project: stops containers & deletes mybox.yaml
+mybox unbox
+
+# Or specify a directory path
+mybox unbox --path ~/Projects/my-app
+
+# Aliases
+mybox remove-project
+mybox decontainerize
 ```
 
 ---
@@ -118,16 +139,26 @@ mybox exec my-web-app npm install lodash
 
 ---
 
-## 💻 CLI Reference Manual
+## 💻 Complete CLI Reference
 
 ```bash
-# List all running containers
-mybox ps
+# Auto-detect project framework and generate mybox.yaml
+mybox init [--path <dir>] [--force]
 
-# List all containers including stopped ones
+# Start project sandboxes
+mybox up [--path <dir>]
+
+# Stop project sandboxes
+mybox down [--path <dir>]
+
+# Stop containers and remove mybox.yaml
+mybox unbox [--path <dir>] [--keep-config]
+
+# List active containers
+mybox ps
 mybox ps --all
 
-# View instant CPU & Memory metrics
+# Live system and performance diagnostics
 mybox stats
 
 # Inspect local container images
@@ -137,7 +168,7 @@ mybox images
 mybox volumes
 
 # View last 100 log lines
-mybox logs <container_name_or_id> --tail 100
+mybox logs <container> --tail 100
 
 # Start, Stop, Restart, Remove
 mybox start <container>
@@ -199,4 +230,3 @@ This project is free and open-source under the **[MIT License](LICENSE)**.
 * **Lead Developer:** [Uchit Chakma](https://uchitchakma.com)
 * **Website:** [ucdreams.com](https://ucdreams.com) • [uchitchakma.com](https://uchitchakma.com)
 * **GitHub:** [https://github.com/uchitchakma/myBox](https://github.com/uchitchakma/myBox)
-

@@ -44,16 +44,16 @@ impl DockerEngine {
         {
             candidates.push((
                 "unix:///var/run/docker.sock".to_string(),
-                "Docker".to_string(),
+                "myBox Hypervisor Engine".to_string(),
             ));
 
-            // OrbStack socket
+            // Lightweight unix sockets
             if let Some(home) = dirs::home_dir() {
                 let orb_path = home.join(".orbstack/run/docker.sock");
                 if orb_path.exists() {
                     candidates.push((
                         format!("unix://{}", orb_path.display()),
-                        "OrbStack".to_string(),
+                        "myBox Fast Engine (Lightweight)".to_string(),
                     ));
                 }
 
@@ -62,31 +62,31 @@ impl DockerEngine {
                 if colima_path.exists() {
                     candidates.push((
                         format!("unix://{}", colima_path.display()),
-                        "Colima".to_string(),
+                        "myBox Engine (Colima)".to_string(),
                     ));
                 }
 
-                // Podman rootless socket
+                // Rootless socket
                 let podman_path = home.join(".local/share/containers/podman/machine/podman.sock");
                 if podman_path.exists() {
                     candidates.push((
                         format!("unix://{}", podman_path.display()),
-                        "Podman".to_string(),
+                        "myBox Rootless Engine".to_string(),
                     ));
                 }
             }
 
-            // Linux rootless podman / XDG_RUNTIME_DIR
+            // Linux rootless / XDG_RUNTIME_DIR
             if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
                 let p = PathBuf::from(&runtime_dir).join("podman/podman.sock");
                 if p.exists() {
-                    candidates.push((format!("unix://{}", p.display()), "Podman".to_string()));
+                    candidates.push((format!("unix://{}", p.display()), "myBox Rootless Engine".to_string()));
                 }
                 let d = PathBuf::from(&runtime_dir).join("docker.sock");
                 if d.exists() {
                     candidates.push((
                         format!("unix://{}", d.display()),
-                        "Docker (Rootless)".to_string(),
+                        "myBox Native Engine".to_string(),
                     ));
                 }
             }
@@ -97,7 +97,7 @@ impl DockerEngine {
         {
             candidates.push((
                 "npipe:////./pipe/docker_engine".to_string(),
-                "Docker Desktop (Windows)".to_string(),
+                "myBox Windows Hypervisor".to_string(),
             ));
         }
 
@@ -117,10 +117,11 @@ impl DockerEngine {
                 return (
                     Some(docker),
                     "local_defaults".to_string(),
-                    "Docker Compatible".to_string(),
+                    "myBox Hypervisor Engine".to_string(),
                 );
             }
         }
+
 
         log::warn!("myBox: No running container runtime detected. Running in detached mode.");
         (None, "None".to_string(), "Offline".to_string())

@@ -98,14 +98,14 @@ enum Commands {
     /// Reclaim disk space by pruning stopped containers & dangling images
     Prune,
 
-    /// Start all containers defined in mybox.yml or docker-compose.yml
+    /// Start all containers defined in mybox.yaml
     Up {
         /// Optional directory path
         #[arg(short, long)]
         path: Option<String>,
     },
 
-    /// Stop all containers defined in mybox.yml or docker-compose.yml
+    /// Stop all containers defined in mybox.yaml
     Down {
         /// Optional directory path
         #[arg(short, long)]
@@ -127,16 +127,28 @@ enum Commands {
         args: Vec<String>,
     },
 
-    /// Auto-detect framework and generate mybox.yml configuration (alias: detect)
+    /// Auto-detect framework and generate mybox.yaml configuration (alias: detect)
     #[command(alias = "detect")]
     Init {
         /// Project directory path (defaults to current directory)
         #[arg(short, long)]
         path: Option<String>,
 
-        /// Overwrite existing mybox.yml without confirmation
+        /// Overwrite existing mybox.yaml without confirmation
         #[arg(short, long)]
         force: bool,
+    },
+
+    /// Stop project and remove mybox.yaml (alias: remove-project, decontainerize)
+    #[command(alias = "remove-project", alias = "decontainerize")]
+    Unbox {
+        /// Project directory path (defaults to current directory)
+        #[arg(short, long)]
+        path: Option<String>,
+
+        /// Keep mybox.yaml configuration file (only stop containers)
+        #[arg(short, long)]
+        keep_config: bool,
     },
 
     /// Run myBox in headless server daemon mode
@@ -239,7 +251,7 @@ async fn main() -> Result<()> {
             if containers.is_empty() {
                 println!(
                     "{}",
-                    "📦 No containers found. Use 'docker run' or compose to launch one."
+                    "📦 No containers found. Use 'mybox up' or 'mybox init' to launch one."
                         .yellow()
                 );
                 return Ok(());
@@ -494,9 +506,9 @@ async fn main() -> Result<()> {
                 }
             }
 
-            let mybox_file = std::path::Path::new(&target_path).join("mybox.yml");
+            let mybox_file = std::path::Path::new(&target_path).join("mybox.yaml");
             if mybox_file.exists() && !force {
-                println!("\n{}", "⚠️  Existing mybox.yml found. Use --force to overwrite.".yellow());
+                println!("\n{}", "⚠️  Existing mybox.yaml found. Use --force to overwrite.".yellow());
             } else {
                 std::fs::write(&mybox_file, &detected.generated_yaml)?;
                 println!("\n{}", format!("✓ Generated {} successfully!", mybox_file.display()).green().bold());
@@ -504,7 +516,19 @@ async fn main() -> Result<()> {
             }
         }
 
+        Some(Commands::Unbox { path, keep_config }) => {
+            let target_path = path.unwrap_or_else(|| ".".to_string());
+            let pb = ProgressBar::new_spinner();
+            pb.set_message("🗑 De-containerizing project and cleaning up...");
+            pb.enable_steady_tick(Duration::from_millis(80));
+
+            let res = mybox_core::ProjectManager::remove_project(Some(target_path), !keep_config).await?;
+            pb.finish_and_clear();
+            println!("{}", res.green().bold());
+        }
+
         Some(Commands::Server { port }) => {
+
 
 
             print_banner();

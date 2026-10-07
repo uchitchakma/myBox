@@ -49,9 +49,9 @@ function mockHandler<T>(cmd: string, args: Record<string, unknown>): Promise<T> 
         total_volumes: 2,
         engine_status: {
           connected: true,
-          engine_type: "myBox Engine (Docker Socket)",
-          socket_path: "unix:///var/run/docker.sock",
-          server_version: "27.2.0",
+          engine_type: "myBox Native Engine",
+          socket_path: "unix:///var/run/mybox.sock",
+          server_version: "0.1.0",
           api_version: "1.47",
           min_api_version: "1.12",
           os: "linux",
@@ -167,14 +167,14 @@ function mockHandler<T>(cmd: string, args: Record<string, unknown>): Promise<T> 
         {
           name: "pgdata_dev",
           driver: "local",
-          mountpoint: "/var/lib/docker/volumes/pgdata_dev/_data",
+          mountpoint: "/var/lib/mybox/volumes/pgdata_dev/_data",
           created_at: "2026-09-15T10:00:00Z",
           size_mb: 256.0,
         },
         {
           name: "redis_cache_store",
           driver: "local",
-          mountpoint: "/var/lib/docker/volumes/redis_cache_store/_data",
+          mountpoint: "/var/lib/mybox/volumes/redis_cache_store/_data",
           created_at: "2026-09-20T14:30:00Z",
           size_mb: 48.5,
         },
@@ -297,6 +297,9 @@ export const api = {
     callTauri<import("./types").DetectedProject>("detect_project", { projectPath }),
   saveProjectYaml: (projectPath: string, yamlContent: string) =>
     callTauri<void>("save_project_yaml", { projectPath, yamlContent }),
+  removeProject: (projectPath: string, deleteConfig = true) =>
+    callTauri<string>("remove_project", { projectPath, deleteConfig }),
 };
+
 
 

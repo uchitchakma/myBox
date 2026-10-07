@@ -183,7 +183,14 @@ fn save_project_yaml(project_path: String, yaml_content: String) -> Result<(), S
     if !path.exists() {
         return Err("Project directory does not exist".into());
     }
-    std::fs::write(path.join("mybox.yml"), yaml_content).map_err(|e| e.to_string())
+    std::fs::write(path.join("mybox.yaml"), yaml_content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn remove_project(project_path: String, delete_config: bool) -> Result<String, String> {
+    mybox_core::ProjectManager::remove_project(Some(project_path), delete_config)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -223,8 +230,10 @@ pub fn run() {
             select_folder,
             detect_project,
             save_project_yaml,
+            remove_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");
 }
+
 

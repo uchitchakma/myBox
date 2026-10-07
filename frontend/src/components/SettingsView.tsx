@@ -50,11 +50,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, custom_socket_path: e.target.value })
                 }
-                placeholder="unix:///var/run/docker.sock or custom socket"
+                placeholder="unix:///var/run/mybox.sock or custom socket"
                 className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 font-mono placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition"
               />
               <p className="text-[11px] text-zinc-500 mt-1">
-                Leave empty for automatic auto-detection (Docker, OrbStack, Colima, Podman, Windows named pipe).
+                Leave empty for automatic auto-detection of local myBox Hypervisor & container sockets.
               </p>
             </div>
 

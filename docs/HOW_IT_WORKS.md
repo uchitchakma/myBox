@@ -1,6 +1,6 @@
-# 📘 How myBox Works: Beginner's Guide to Containerization
+# 📘 How myBox Works: Complete Guide to Containerization & Unboxing
 
-Welcome to **myBox**! This guide is written for everyone — whether you are a beginner writing your first app or a senior DevOps engineer managing remote Linux servers.
+Welcome to **myBox**! This guide is written for everyone — whether you are a beginner writing your first app or a DevOps engineer managing remote Linux servers.
 
 ---
 
@@ -38,22 +38,47 @@ Click the crimson **`🚀 Launch Project`** button located in the sidebar or top
 ### Step 2: Choose Your Folder
 Click **`📁 Select`** (or *Browse Finder*) to pick your project folder from your files.
 
-### Step 3: Select Stack Preset
-Choose your technology:
-* 📦 **Fullstack + Database:** Node.js app connected to a PostgreSQL 16 database.
-* ⚡ **Node.js / React / Next:** High-performance Node.js Alpine sandbox.
-* 🐍 **Python / FastAPI / Django:** Python 3.12 with pip requirements auto-install.
-* 🐘 **PHP / Laravel / WordPress:** PHP 8.3 with Apache web server.
+### Step 3: Auto-Detection & Stacks
+myBox automatically identifies your project framework:
+* 📦 **Fullstack Multi-Service:** Frontend + Backend + PostgreSQL + Redis.
+* ⚡ **Next.js / React / Vite / Vue / Nuxt / SvelteKit / Astro / Remix**
+* 🐍 **Python / FastAPI / Django / Flask / Streamlit**
+* 🐘 **PHP / Laravel / WordPress**
+* 🦀 **Rust / Axum / Actix**
+* 🐹 **Go / Gin / Fiber**
+* ☕ **Java / Spring Boot**
+* 🔷 **.NET / C# / ASP.NET Core**
+* 🦋 **Flutter Web**
 
 ### Step 4: Click `Launch in myBox`
 **myBox** will automatically:
-1. Detect or create your `mybox.yml` configuration.
-2. Spin up the isolated container sandbox.
+1. Generate `mybox.yaml` in your project folder.
+2. Spin up the isolated container sandboxes.
 3. Stream real-time logs and live CPU/RAM meters.
 
 ---
 
-## 💻 3. Using the Server CLI (`mybox`)
+## 🗑️ 3. How to Remove / De-containerize (Unbox)
+
+If you decide you no longer want to run your project in a container or want to reset:
+
+### In the Desktop App:
+1. Open the Launch Project modal and select your folder.
+2. Click **`Unbox Project`** (or *De-containerize*).
+3. Confirm the action — myBox will shut down the containers and remove `mybox.yaml`.
+
+### In the Terminal / CLI:
+```bash
+# De-containerize current folder
+mybox unbox
+
+# De-containerize a specific path
+mybox unbox --path ~/Projects/my-app
+```
+
+---
+
+## 💻 4. Using the Server CLI (`mybox`)
 
 On headless Linux servers (Ubuntu, Debian, AWS, DigitalOcean) where there is no GUI:
 
@@ -62,25 +87,31 @@ On headless Linux servers (Ubuntu, Debian, AWS, DigitalOcean) where there is no 
 # 1. Enter your project directory
 cd /var/www/my-project
 
-# 2. Launch the project containers
+# 2. Auto-detect framework
+mybox init
+
+# 3. Launch the project containers
 mybox up
 
-# 3. View live status
+# 4. View live status
 mybox ps
 
-# 4. View real-time logs
+# 5. View real-time logs
 mybox logs my-app --tail 50
 
-# 5. Open an interactive shell inside the container
+# 6. Open an interactive shell inside the container
 mybox exec my-app
 
-# 6. Stop containers
+# 7. Stop containers
 mybox down
+
+# 8. Unbox / Remove
+mybox unbox
 ```
 
 ---
 
-## 📦 4. How to Install Libraries & Tools
+## 📦 5. How to Install Libraries & Tools
 
 | Goal | What to do |
 | :--- | :--- |
@@ -91,7 +122,7 @@ mybox down
 
 ---
 
-## 🧹 5. Reclaiming Disk Space
+## 🧹 6. Reclaiming Disk Space
 
 Containers and old build layers can take up disk space over time.
 

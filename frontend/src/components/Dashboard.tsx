@@ -159,7 +159,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <p className="text-sm font-bold text-white">No containers running</p>
               <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
-                Containerize and run any project folder with 1-click presets or standard mybox.yml.
+                Containerize and run any project folder with 1-click presets or standard mybox.yaml.
               </p>
               <button
                 onClick={onOpenLaunchModal}
@@ -245,20 +245,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="space-y-2 font-mono text-[11px]">
               <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
+                <span>mybox init</span>
+                <span className="text-zinc-500"># auto-detect</span>
+              </div>
+              <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
+                <span>mybox up</span>
+                <span className="text-zinc-500"># start sandbox</span>
+              </div>
+              <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
+                <span>mybox unbox</span>
+                <span className="text-zinc-500"># stop & remove</span>
+              </div>
+              <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
                 <span>mybox ps</span>
-                <span className="text-zinc-500"># list containers</span>
-              </div>
-              <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
-                <span>mybox stats</span>
-                <span className="text-zinc-500"># live metrics</span>
-              </div>
-              <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
-                <span>mybox prune</span>
-                <span className="text-zinc-500"># reclaim disk</span>
-              </div>
-              <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 flex justify-between">
-                <span>mybox server</span>
-                <span className="text-zinc-500"># daemon mode</span>
+                <span className="text-zinc-500"># list active</span>
               </div>
             </div>
           </div>

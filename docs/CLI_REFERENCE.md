@@ -19,24 +19,42 @@ cargo install --path crates/mybox-cli
 ## ⚡ Command Quick Cheat Sheet
 
 ```bash
-mybox ps                # List running containers
-mybox ps -a             # List all containers (including stopped)
-mybox up                # Launch all containers in current folder (mybox.yml)
-mybox down              # Stop all containers in current folder
-mybox exec <name>       # Open interactive shell inside container (alias: mybox sh)
-mybox exec <name> <cmd> # Run command inside container (e.g. pip install)
-mybox logs <name>       # Stream recent container logs
-mybox stats             # View host CPU & RAM diagnostics
-mybox prune             # Delete stopped containers & reclaim disk space
-mybox server            # Start background health monitoring daemon
+mybox init               # Auto-detect framework and generate mybox.yaml
+mybox up                 # Launch all containers defined in mybox.yaml
+mybox down               # Stop all containers in current folder
+mybox unbox              # Stop containers & remove mybox.yaml (De-containerize)
+mybox ps                 # List running containers
+mybox ps -a              # List all containers (including stopped)
+mybox exec <name>        # Open interactive shell inside container (alias: mybox sh)
+mybox exec <name> <cmd>  # Run command inside container (e.g. pip install)
+mybox logs <name>        # Stream recent container logs
+mybox stats              # View host CPU & RAM diagnostics
+mybox prune              # Delete stopped containers & reclaim disk space
+mybox server             # Start background health monitoring daemon
 ```
 
 ---
 
 ## 📖 Detailed Subcommands
 
-### 1. `mybox up [--path <DIR>]`
-Spins up and orchestrates all containers defined in `mybox.yml` or `docker-compose.yml`.
+### 1. `mybox init [--path <DIR>] [--force]` (Alias: `mybox detect`)
+Inspects your project codebase, identifies over 20+ supported web & backend frameworks, detects multi-tier setups, and writes a production-ready `mybox.yaml` file.
+
+```bash
+# Auto-detect in current directory
+mybox init
+
+# Auto-detect in a specific project directory
+mybox init --path ~/Projects/my-django-app
+
+# Force overwrite existing mybox.yaml
+mybox init --force
+```
+
+---
+
+### 2. `mybox up [--path <DIR>]`
+Spins up and orchestrates all containers defined in `mybox.yaml`.
 
 ```bash
 # Launch in current directory
@@ -48,8 +66,8 @@ mybox up --path ~/Projects/my-app
 
 ---
 
-### 2. `mybox down [--path <DIR>]`
-Gracefully stops and shuts down all containers associated with the project.
+### 3. `mybox down [--path <DIR>]`
+Gracefully stops and shuts down all containers associated with the project without deleting configuration.
 
 ```bash
 # Stop current directory project
@@ -61,7 +79,23 @@ mybox down --path ~/Projects/my-app
 
 ---
 
-### 3. `mybox exec <CONTAINER> [COMMAND...]` (Alias: `mybox sh`)
+### 4. `mybox unbox [--path <DIR>] [--keep-config]` (Aliases: `mybox remove-project`, `mybox decontainerize`)
+De-containerizes the project: shuts down all running containers and removes `mybox.yaml`.
+
+```bash
+# De-containerize current directory
+mybox unbox
+
+# De-containerize specific folder
+mybox unbox --path ~/Projects/my-app
+
+# Stop containers but keep mybox.yaml file
+mybox unbox --keep-config
+```
+
+---
+
+### 5. `mybox exec <CONTAINER> [COMMAND...]` (Alias: `mybox sh`)
 Execute any command or open an interactive terminal shell inside a running container.
 
 ```bash
@@ -81,7 +115,7 @@ mybox exec my-web-app ls -la /app
 
 ---
 
-### 4. `mybox ps` / `mybox list`
+### 6. `mybox ps` / `mybox list`
 Display all containers in a clean, colorized terminal table.
 
 ```bash
@@ -95,7 +129,7 @@ mybox ps -a
 
 ---
 
-### 5. `mybox stats`
+### 7. `mybox stats`
 Display real-time CPU, RAM, active engine socket, and container metrics.
 
 ```bash
@@ -104,7 +138,7 @@ mybox stats
 
 ---
 
-### 6. `mybox logs <CONTAINER> [--tail N]`
+### 8. `mybox logs <CONTAINER> [--tail N]`
 Fetch and stream the last `N` lines of container logs.
 
 ```bash
@@ -117,7 +151,7 @@ mybox logs my-web-app --tail 25
 
 ---
 
-### 7. `mybox start <CONTAINER>`
+### 9. `mybox start <CONTAINER>`
 Start an existing stopped container.
 
 ```bash
@@ -126,7 +160,7 @@ mybox start my-web-app
 
 ---
 
-### 8. `mybox stop <CONTAINER>`
+### 10. `mybox stop <CONTAINER>`
 Gracefully stop a running container.
 
 ```bash
@@ -135,7 +169,7 @@ mybox stop my-web-app
 
 ---
 
-### 9. `mybox restart <CONTAINER>`
+### 11. `mybox restart <CONTAINER>`
 Restart a container instance.
 
 ```bash
@@ -144,7 +178,7 @@ mybox restart my-web-app
 
 ---
 
-### 10. `mybox rm <CONTAINER> [--force]`
+### 12. `mybox rm <CONTAINER> [--force]`
 Remove a container from local disk.
 
 ```bash
@@ -157,7 +191,7 @@ mybox rm my-web-app --force
 
 ---
 
-### 11. `mybox images` & `mybox rmi <IMAGE>`
+### 13. `mybox images` & `mybox rmi <IMAGE>`
 Inspect and remove locally cached container images.
 
 ```bash
@@ -170,8 +204,8 @@ mybox rmi redis:7.2-alpine
 
 ---
 
-### 12. `mybox volumes`
-Inspect persistent Docker volumes and host storage mountpoints.
+### 14. `mybox volumes`
+Inspect persistent storage volumes and host directory mountpoints.
 
 ```bash
 mybox volumes
@@ -179,7 +213,7 @@ mybox volumes
 
 ---
 
-### 13. `mybox prune`
+### 15. `mybox prune`
 Reclaim gigabytes of wasted disk space by safely removing all stopped containers and unused dangling images.
 
 ```bash
@@ -188,7 +222,7 @@ mybox prune
 
 ---
 
-### 14. `mybox server [--port <PORT>]`
+### 16. `mybox server [--port <PORT>]`
 Start a lightweight background status daemon for monitoring server health.
 
 ```bash
@@ -202,4 +236,3 @@ mybox server --port 9090
 * **👨‍💻 Lead Developer:** [Uchit Chakma](https://uchitchakma.com)
 * **🎨 Primary Brand Color:** `#C5453E`
 * **📄 License:** MIT
-

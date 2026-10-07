@@ -16,13 +16,14 @@ impl ProjectManager {
             anyhow::bail!("Project directory does not exist: {}", project_path);
         }
 
+        let mybox_yaml = path.join("mybox.yaml");
         let mybox_yml = path.join("mybox.yml");
         let docker_compose = path.join("docker-compose.yml");
         let boxfile = path.join("Boxfile");
         let dockerfile = path.join("Dockerfile");
 
         // If no configuration exists, auto-generate standard myBox config
-        if !mybox_yml.exists() && !docker_compose.exists() && !boxfile.exists() && !dockerfile.exists() {
+        if !mybox_yaml.exists() && !mybox_yml.exists() && !docker_compose.exists() && !boxfile.exists() && !dockerfile.exists() {
             Self::generate_project_config(path, project_type, port)?;
         }
 
@@ -49,7 +50,7 @@ services:
 "#,
                     port = port
                 );
-                std::fs::write(path.join("mybox.yml"), content)?;
+                std::fs::write(path.join("mybox.yaml"), content)?;
             }
             "python" | "django" | "fastapi" | "flask" => {
                 let content = format!(
@@ -68,7 +69,7 @@ services:
 "#,
                     port = port
                 );
-                std::fs::write(path.join("mybox.yml"), content)?;
+                std::fs::write(path.join("mybox.yaml"), content)?;
             }
             "php" | "wordpress" | "laravel" => {
                 let content = format!(
@@ -86,7 +87,7 @@ services:
 "#,
                     port = port
                 );
-                std::fs::write(path.join("mybox.yml"), content)?;
+                std::fs::write(path.join("mybox.yaml"), content)?;
             }
             "fullstack" | "database" | _ => {
                 let content = format!(
@@ -123,7 +124,7 @@ volumes:
 "#,
                     port = port
                 );
-                std::fs::write(path.join("mybox.yml"), content)?;
+                std::fs::write(path.join("mybox.yaml"), content)?;
             }
         }
 
@@ -134,17 +135,17 @@ volumes:
         let work_dir = path.unwrap_or_else(|| ".".to_string());
         let target_path = Path::new(&work_dir);
 
-        // Check if mybox.yml or docker-compose.yml exists
-        let compose_file = if target_path.join("mybox.yml").exists() {
-            "mybox.yml"
-        } else if target_path.join("mybox.yaml").exists() {
+        // Check if mybox.yaml or mybox.yml exists
+        let compose_file = if target_path.join("mybox.yaml").exists() {
             "mybox.yaml"
+        } else if target_path.join("mybox.yml").exists() {
+            "mybox.yml"
         } else if target_path.join("docker-compose.yml").exists() {
             "docker-compose.yml"
         } else if target_path.join("docker-compose.yaml").exists() {
             "docker-compose.yaml"
         } else {
-            "mybox.yml"
+            "mybox.yaml"
         };
 
         let output = Command::new("docker")
@@ -169,7 +170,9 @@ volumes:
         let work_dir = path.unwrap_or_else(|| ".".to_string());
         let target_path = Path::new(&work_dir);
 
-        let compose_file = if target_path.join("mybox.yml").exists() {
+        let compose_file = if target_path.join("mybox.yaml").exists() {
+            "mybox.yaml"
+        } else if target_path.join("mybox.yml").exists() {
             "mybox.yml"
         } else {
             "docker-compose.yml"
@@ -189,4 +192,31 @@ volumes:
 
         Ok("✓ Project containers stopped and cleaned up.".into())
     }
+
+    pub async fn remove_project(path: Option<String>, delete_config: bool) -> Result<String> {
+        let work_dir = path.unwrap_or_else(|| ".".to_string());
+        let target_path = Path::new(&work_dir);
+
+        // 1. Stop and tear down all running containers
+        let _ = Self::compose_down(Some(work_dir.clone())).await;
+
+        // 2. If delete_config is true, delete mybox.yaml / mybox.yml
+        if delete_config {
+            let mut deleted = Vec::new();
+            for filename in &["mybox.yaml", "mybox.yml", "mybox.json"] {
+                let file_path = target_path.join(filename);
+                if file_path.exists() {
+                    let _ = std::fs::remove_file(&file_path);
+                    deleted.push(*filename);
+                }
+            }
+
+            if !deleted.is_empty() {
+                return Ok(format!("✓ De-containerized successfully and removed {}", deleted.join(", ")));
+            }
+        }
+
+        Ok("✓ Project containers removed successfully.".into())
+    }
 }
+

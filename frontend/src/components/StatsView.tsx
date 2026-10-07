@@ -74,13 +74,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ metrics }) => {
             <div className="flex justify-between p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
               <span className="text-zinc-400">Connected Runtime</span>
               <span className="font-bold text-emerald-400">
-                {metrics?.engine_status.engine_type || "Docker Daemon"}
+                {metrics?.engine_status.engine_type || "myBox Native Engine"}
               </span>
             </div>
             <div className="flex justify-between p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
               <span className="text-zinc-400">Server Engine Version</span>
               <span className="font-mono text-zinc-200">
-                {metrics?.engine_status.server_version || "27.x"}
+                {metrics?.engine_status.server_version || "0.1.0"}
               </span>
             </div>
             <div className="flex justify-between p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
@@ -92,7 +92,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ metrics }) => {
             <div className="flex justify-between p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
               <span className="text-zinc-400">Socket Endpoint</span>
               <span className="font-mono text-zinc-300 text-[10px] truncate max-w-xs">
-                {metrics?.engine_status.socket_path || "unix:///var/run/docker.sock"}
+                {metrics?.engine_status.socket_path || "unix:///var/run/mybox.sock"}
               </span>
             </div>
           </div>

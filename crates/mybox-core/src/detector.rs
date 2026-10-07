@@ -11,21 +11,23 @@ impl FrameworkDetector {
             return Self::fallback_default("Invalid Path", 3000);
         }
 
-        // Check for existing mybox.yml / docker-compose.yml first
-        if root.join("mybox.yml").exists() || root.join("mybox.yaml").exists() {
-            let content = std::fs::read_to_string(root.join("mybox.yml"))
-                .or_else(|_| std::fs::read_to_string(root.join("mybox.yaml")))
-                .unwrap_or_default();
+        // Check for existing mybox.yaml / mybox.yml / compose configuration first
+        if root.join("mybox.yaml").exists() || root.join("mybox.yml").exists() {
+            let (file_name, content) = if root.join("mybox.yaml").exists() {
+                ("mybox.yaml", std::fs::read_to_string(root.join("mybox.yaml")).unwrap_or_default())
+            } else {
+                ("mybox.yml", std::fs::read_to_string(root.join("mybox.yml")).unwrap_or_default())
+            };
             return DetectedProject {
                 framework_id: "custom_mybox".into(),
                 name: "Existing myBox Project".into(),
                 category: "Custom Configuration".into(),
-                description: "Existing mybox.yml configuration detected in project root".into(),
+                description: format!("Existing {} configuration detected in project root", file_name),
                 default_port: 3000,
                 icon: "custom".into(),
                 runtime_image: "custom".into(),
                 start_command: "mybox up".into(),
-                detected_files: vec!["mybox.yml".into()],
+                detected_files: vec![file_name.into()],
                 is_multi_service: false,
                 generated_yaml: content,
                 services: vec![],
@@ -37,7 +39,7 @@ impl FrameworkDetector {
             let content = std::fs::read_to_string(root.join(file)).unwrap_or_default();
             return DetectedProject {
                 framework_id: "custom_compose".into(),
-                name: "Docker Compose Project".into(),
+                name: "myBox Compose Project".into(),
                 category: "Compose Configuration".into(),
                 description: format!("Existing {} configuration found", file),
                 default_port: 3000,

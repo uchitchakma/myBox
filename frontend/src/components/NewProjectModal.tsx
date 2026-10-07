@@ -17,6 +17,7 @@ import {
   ExternalLink,
   ChevronRight,
   Terminal,
+  Trash2,
 } from "lucide-react";
 import { api } from "../api";
 import { DetectedProject } from "../types";
@@ -38,6 +39,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [projectType, setProjectType] = useState("auto");
   const [port, setPort] = useState(3000);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [isUnboxing, setIsUnboxing] = useState(false);
   const [isBrowsing, setIsBrowsing] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectedProject, setDetectedProject] = useState<DetectedProject | null>(null);
@@ -46,6 +48,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [activeView, setActiveView] = useState<"auto" | "presets" | "yaml">("auto");
   const [yamlContent, setYamlContent] = useState("");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showUnboxConfirm, setShowUnboxConfirm] = useState(false);
 
   // Manual fallback presets
   const presets = [
@@ -151,6 +154,36 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     }
   };
 
+  const handleUnbox = async () => {
+    if (!projectPath.trim()) {
+      setStatusMessage("Please select a project folder to unbox.");
+      setIsError(true);
+      return;
+    }
+
+    setIsUnboxing(true);
+    setStatusMessage("🗑 De-containerizing project, stopping containers & removing mybox.yaml...");
+    setIsError(false);
+
+    try {
+      const res = await api.removeProject(projectPath.trim(), true);
+      setStatusMessage(res || "✓ De-containerized successfully and removed mybox.yaml.");
+      setShowUnboxConfirm(false);
+      setTimeout(() => {
+        setIsUnboxing(false);
+        onLaunchSuccess();
+        onClose();
+      }, 1400);
+    } catch (err: unknown) {
+      setIsError(true);
+      setStatusMessage(
+        err instanceof Error ? err.message : String(err) || "Failed to de-containerize project."
+      );
+      setIsUnboxing(false);
+      setShowUnboxConfirm(false);
+    }
+  };
+
   const handleLaunch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectPath.trim()) {
@@ -190,6 +223,10 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
       setIsLaunching(false);
     }
   };
+
+  const hasExistingConfig =
+    detectedProject?.framework_id === "custom_mybox" ||
+    detectedProject?.detected_files.some(f => f.includes("mybox"));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 select-none">
@@ -261,7 +298,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             }`}
           >
             <FileCode2 className="w-3.5 h-3.5" />
-            <span>Inspect & Edit YAML</span>
+            <span>Inspect & Edit mybox.yaml</span>
           </button>
         </div>
 
@@ -275,14 +312,24 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </label>
               <div className="flex items-center space-x-2">
                 {projectPath && (
-                  <button
-                    type="button"
-                    onClick={() => setShowResetConfirm(true)}
-                    className="flex items-center space-x-1 text-zinc-400 hover:text-zinc-200 text-[11px] transition"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isDetecting ? "animate-spin text-brand-400" : ""}`} />
-                    <span>Re-Scan</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowResetConfirm(true)}
+                      className="flex items-center space-x-1 text-zinc-400 hover:text-zinc-200 text-[11px] transition"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isDetecting ? "animate-spin text-brand-400" : ""}`} />
+                      <span>Re-Scan</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowUnboxConfirm(true)}
+                      className="flex items-center space-x-1 text-red-400 hover:text-red-300 text-[11px] transition"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Unbox Project</span>
+                    </button>
+                  </>
                 )}
                 <button
                   type="button"
@@ -350,6 +397,17 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                         </p>
                       </div>
                     </div>
+
+                    {hasExistingConfig && (
+                      <button
+                        type="button"
+                        onClick={() => setShowUnboxConfirm(true)}
+                        className="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-[11px] font-semibold flex items-center space-x-1 transition"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>De-containerize</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Detected Details Grid */}
@@ -454,17 +512,17 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block font-semibold text-zinc-200">
-                  mybox.yml Configuration Editor
+                  mybox.yaml Configuration Editor
                 </label>
                 <span className="text-[10px] text-zinc-500">
-                  Direct live edit of compose config
+                  Direct live edit of sandbox container config
                 </span>
               </div>
               <textarea
                 rows={10}
                 value={yamlContent}
                 onChange={(e) => setYamlContent(e.target.value)}
-                placeholder="# Generated mybox.yml configuration"
+                placeholder="# Generated mybox.yaml configuration"
                 className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs text-zinc-100 font-mono focus:outline-none focus:border-brand-500 leading-relaxed resize-y"
               />
             </div>
@@ -532,6 +590,33 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             </div>
           )}
 
+          {/* Unbox / De-containerize Confirmation Overlay */}
+          {showUnboxConfirm && (
+            <div className="p-3.5 rounded-2xl bg-zinc-900 border border-red-500/30 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2 text-red-400">
+                <Trash2 className="w-4 h-4 shrink-0" />
+                <span>Stop all containers and delete mybox.yaml?</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUnboxConfirm(false)}
+                  className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUnbox}
+                  disabled={isUnboxing}
+                  className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 font-semibold"
+                >
+                  {isUnboxing ? "Unboxing..." : "Confirm Unbox"}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Footer Actions */}
           <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80">
             <a
@@ -554,7 +639,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isLaunching}
+                disabled={isLaunching || isUnboxing}
                 className="flex items-center space-x-2 px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-lg shadow-brand-500/30 transition disabled:opacity-50"
               >
                 <Sparkles className={`w-4 h-4 ${isLaunching ? "animate-spin" : ""}`} />
