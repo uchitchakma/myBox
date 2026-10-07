@@ -87,3 +87,29 @@ pub struct PruneResult {
     pub images_deleted: usize,
     pub space_reclaimed_mb: f64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DetectedProject {
+    pub framework_id: String,
+    pub name: String,
+    pub category: String,
+    pub description: String,
+    pub default_port: u16,
+    pub icon: String,
+    pub runtime_image: String,
+    pub start_command: String,
+    pub detected_files: Vec<String>,
+    pub is_multi_service: bool,
+    pub generated_yaml: String,
+    pub services: Vec<DetectedService>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DetectedService {
+    pub name: String,
+    pub role: String,
+    pub image: String,
+    pub port: u16,
+    pub env_vars: Vec<String>,
+}
+

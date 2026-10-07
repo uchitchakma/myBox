@@ -172,6 +172,19 @@ async fn select_folder() -> Result<Option<String>, String> {
     Ok(folder.map(|handle| handle.path().to_string_lossy().to_string()))
 }
 
+#[tauri::command]
+fn detect_project(project_path: String) -> mybox_core::DetectedProject {
+    mybox_core::FrameworkDetector::detect(&project_path)
+}
+
+#[tauri::command]
+fn save_project_yaml(project_path: String, yaml_content: String) -> Result<(), String> {
+    let path = std::path::Path::new(&project_path);
+    if !path.exists() {
+        return Err("Project directory does not exist".into());
+    }
+    std::fs::write(path.join("mybox.yml"), yaml_content).map_err(|e| e.to_string())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -208,7 +221,10 @@ pub fn run() {
             compose_up,
             compose_down,
             select_folder,
+            detect_project,
+            save_project_yaml,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");
 }
+

@@ -127,6 +127,18 @@ enum Commands {
         args: Vec<String>,
     },
 
+    /// Auto-detect framework and generate mybox.yml configuration (alias: detect)
+    #[command(alias = "detect")]
+    Init {
+        /// Project directory path (defaults to current directory)
+        #[arg(short, long)]
+        path: Option<String>,
+
+        /// Overwrite existing mybox.yml without confirmation
+        #[arg(short, long)]
+        force: bool,
+    },
+
     /// Run myBox in headless server daemon mode
     Server {
         /// Port to bind the HTTP status daemon
@@ -461,7 +473,39 @@ async fn main() -> Result<()> {
             }
         }
 
+        Some(Commands::Init { path, force }) => {
+            let target_path = path.unwrap_or_else(|| ".".to_string());
+            let detected = mybox_core::FrameworkDetector::detect(&target_path);
+
+            print_banner();
+            println!("{}", "🔍 myBox Intelligent Project Detector".bold().custom_color(colored::CustomColor { r: 0xC5, g: 0x45, b: 0x3E }));
+            println!("  • Directory:       {}", target_path.cyan());
+            println!("  • Framework:       {}", detected.name.bold().green());
+            println!("  • Category:        {}", detected.category);
+            println!("  • Description:     {}", detected.description);
+            println!("  • Default Port:    {}", detected.default_port.to_string().yellow());
+            println!("  • Runtime Image:   {}", detected.runtime_image);
+            println!("  • Start Command:   {}", detected.start_command.cyan());
+
+            if !detected.services.is_empty() {
+                println!("\n  📦 Detected Services ({}):", detected.services.len());
+                for s in &detected.services {
+                    println!("    - {} [{} -> Port {}]", s.name.bold(), s.role.dimmed(), s.port);
+                }
+            }
+
+            let mybox_file = std::path::Path::new(&target_path).join("mybox.yml");
+            if mybox_file.exists() && !force {
+                println!("\n{}", "⚠️  Existing mybox.yml found. Use --force to overwrite.".yellow());
+            } else {
+                std::fs::write(&mybox_file, &detected.generated_yaml)?;
+                println!("\n{}", format!("✓ Generated {} successfully!", mybox_file.display()).green().bold());
+                println!("Run '{}' to start your project sandboxes.", "mybox up".bold().cyan());
+            }
+        }
+
         Some(Commands::Server { port }) => {
+
 
             print_banner();
             println!(

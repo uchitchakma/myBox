@@ -97,3 +97,27 @@ export interface AppConfig {
   dark_mode: boolean;
   log_tail_lines: number;
 }
+
+export interface DetectedService {
+  name: string;
+  role: string;
+  image: string;
+  port: number;
+  env_vars: string[];
+}
+
+export interface DetectedProject {
+  framework_id: string;
+  name: string;
+  category: string;
+  description: string;
+  default_port: number;
+  icon: string;
+  runtime_image: string;
+  start_command: string;
+  detected_files: string[];
+  is_multi_service: boolean;
+  generated_yaml: string;
+  services: DetectedService[];
+}
+
