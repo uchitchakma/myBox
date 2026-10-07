@@ -39,9 +39,20 @@ impl DockerEngine {
             candidates.push((host.clone(), "Custom DOCKER_HOST".to_string()));
         }
 
-        // 2. Standard Docker unix socket
+        // 2. Standard and Native myBox unix sockets
         #[cfg(unix)]
         {
+            // myBox Native Hypervisor Socket
+            if let Some(home) = dirs::home_dir() {
+                let mybox_path = home.join(".mybox/run/mybox.sock");
+                if mybox_path.exists() {
+                    candidates.push((
+                        format!("unix://{}", mybox_path.display()),
+                        "myBox Native Hypervisor Engine".to_string(),
+                    ));
+                }
+            }
+
             candidates.push((
                 "unix:///var/run/docker.sock".to_string(),
                 "myBox Hypervisor Engine".to_string(),

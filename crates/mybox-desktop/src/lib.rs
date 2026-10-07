@@ -193,6 +193,37 @@ async fn remove_project(project_path: String, delete_config: bool) -> Result<Str
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn start_native_engine(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let msg = mybox_core::HypervisorManager::start_native_engine()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Re-connect docker engine client
+    let mut docker_lock = state.docker.write().await;
+    *docker_lock = DockerEngine::new().await;
+
+    Ok(msg)
+}
+
+#[tauri::command]
+async fn stop_native_engine(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let msg = mybox_core::HypervisorManager::stop_native_engine()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Refresh docker client status
+    let mut docker_lock = state.docker.write().await;
+    *docker_lock = DockerEngine::new().await;
+
+    Ok(msg)
+}
+
+#[tauri::command]
+async fn get_native_engine_status() -> Result<mybox_core::HypervisorStatus, String> {
+    Ok(mybox_core::HypervisorManager::check_status().await)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -231,6 +262,9 @@ pub fn run() {
             detect_project,
             save_project_yaml,
             remove_project,
+            start_native_engine,
+            stop_native_engine,
+            get_native_engine_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");

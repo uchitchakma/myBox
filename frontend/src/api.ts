@@ -299,6 +299,9 @@ export const api = {
     callTauri<void>("save_project_yaml", { projectPath, yamlContent }),
   removeProject: (projectPath: string, deleteConfig = true) =>
     callTauri<string>("remove_project", { projectPath, deleteConfig }),
+  startNativeEngine: () => callTauri<string>("start_native_engine"),
+  stopNativeEngine: () => callTauri<string>("stop_native_engine"),
+  getNativeEngineStatus: () => callTauri<{ is_running: boolean; socket_path: string }>("get_native_engine_status"),
 };
 
 
