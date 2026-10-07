@@ -165,6 +165,14 @@ async fn compose_down(path: Option<String>) -> Result<String, String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn select_folder() -> Result<Option<String>, String> {
+    let dialog = rfd::AsyncFileDialog::new().set_title("Select Project Directory for myBox");
+    let folder = dialog.pick_folder().await;
+    Ok(folder.map(|handle| handle.path().to_string_lossy().to_string()))
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -199,6 +207,7 @@ pub fn run() {
             launch_project,
             compose_up,
             compose_down,
+            select_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");

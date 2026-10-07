@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { X, Sparkles, Folder, Rocket, CheckCircle2, AlertCircle, Database, Code, Globe, Layers } from "lucide-react";
+import { X, Sparkles, Folder, FolderOpen, Rocket, CheckCircle2, AlertCircle, Database, Code, Globe, Layers } from "lucide-react";
+import { api } from "../api";
 
 interface NewProjectModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [projectType, setProjectType] = useState("fullstack");
   const [port, setPort] = useState(3000);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [isBrowsing, setIsBrowsing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
@@ -60,10 +62,24 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     setPort(defaultPort);
   };
 
+  const handleBrowseFolder = async () => {
+    try {
+      setIsBrowsing(true);
+      const selected = await api.selectFolder();
+      if (selected) {
+        setProjectPath(selected);
+      }
+    } catch (err) {
+      console.error("Failed to open directory dialog:", err);
+    } finally {
+      setIsBrowsing(false);
+    }
+  };
+
   const handleLaunch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectPath.trim()) {
-      setStatusMessage("Please provide your project folder path.");
+      setStatusMessage("Please select or enter your project folder path.");
       setIsError(true);
       return;
     }
@@ -126,23 +142,44 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         <form onSubmit={handleLaunch} className="p-6 space-y-5 text-xs text-zinc-300">
           {/* Folder Path */}
           <div className="space-y-1.5">
-            <label className="block font-semibold text-zinc-200">
-              Project Folder Path
-            </label>
-            <div className="relative">
-              <Folder className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="flex items-center justify-between">
+              <label className="block font-semibold text-zinc-200">
+                Project Folder Path
+              </label>
+              <button
+                type="button"
+                onClick={handleBrowseFolder}
+                disabled={isBrowsing}
+                className="flex items-center space-x-1.5 text-brand-400 hover:text-brand-300 text-[11px] font-medium transition cursor-pointer"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>{isBrowsing ? "Opening Finder..." : "Browse Finder..."}</span>
+              </button>
+            </div>
+            <div className="relative flex items-center">
+              <Folder className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 placeholder="/Users/uchitchakma/Projects/my-app"
-                className="w-full pl-9 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition font-mono"
+                className="w-full pl-9 pr-28 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition font-mono"
               />
+              <button
+                type="button"
+                onClick={handleBrowseFolder}
+                disabled={isBrowsing}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700/60 text-[11px] font-medium transition flex items-center space-x-1.5 shadow-sm"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-brand-400" />
+                <span>Select</span>
+              </button>
             </div>
             <p className="text-[11px] text-zinc-500">
-              Select your local project directory. If no <code>mybox.yml</code> or <code>Dockerfile</code> is found, myBox creates it automatically.
+              Click <strong>Select</strong> or <strong>Browse Finder</strong> to pick any folder directly from macOS Finder.
             </p>
           </div>
+
 
           {/* Preset Selector */}
           <div className="space-y-2">

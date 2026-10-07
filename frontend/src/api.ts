@@ -239,6 +239,10 @@ function mockHandler<T>(cmd: string, args: Record<string, unknown>): Promise<T> 
     case "compose_down":
       return Promise.resolve("✓ myBox project down" as unknown as T);
 
+    case "select_folder":
+      return Promise.resolve("/Users/uchitchakma/Projects/my-app" as unknown as T);
+
+
     default:
       return Promise.reject(new Error(`Unknown command: ${cmd}`));
   }
@@ -270,4 +274,6 @@ export const api = {
     callTauri<string>("launch_project", { projectPath, projectType, port }),
   composeUp: (path?: string) => callTauri<string>("compose_up", { path }),
   composeDown: (path?: string) => callTauri<string>("compose_down", { path }),
+  selectFolder: () => callTauri<string | null>("select_folder"),
 };
+
