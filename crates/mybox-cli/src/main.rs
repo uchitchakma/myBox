@@ -112,6 +112,21 @@ enum Commands {
         path: Option<String>,
     },
 
+    /// Execute a command or open an interactive shell inside a container (alias: sh)
+    #[command(alias = "sh")]
+    Exec {
+        /// Container ID or Name
+        container: String,
+
+        /// Command to execute (default: /bin/sh)
+        #[arg(default_value = "/bin/sh")]
+        cmd: String,
+
+        /// Optional command arguments (e.g. pip install requests)
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+
     /// Run myBox in headless server daemon mode
     Server {
         /// Port to bind the HTTP status daemon
@@ -420,7 +435,34 @@ async fn main() -> Result<()> {
             println!("{}", res.yellow().bold());
         }
 
+        Some(Commands::Exec {
+            container,
+            cmd,
+            args,
+        }) => {
+            println!("🔌 Executing in container '{}'...", container.cyan());
+            let mut command = std::process::Command::new("docker");
+            command.arg("exec").arg("-it").arg(&container).arg(&cmd);
+            for arg in &args {
+                command.arg(arg);
+            }
+            let status = command.status();
+            match status {
+                Ok(s) => {
+                    if let Some(code) = s.code() {
+                        if code != 0 {
+                            std::process::exit(code);
+                        }
+                    }
+                }
+                Err(err) => {
+                    eprintln!("{}", format!("Failed to execute command: {}", err).red().bold());
+                }
+            }
+        }
+
         Some(Commands::Server { port }) => {
+
             print_banner();
             println!(
                 "{}",
