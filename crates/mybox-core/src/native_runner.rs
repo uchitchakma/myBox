@@ -181,6 +181,34 @@ impl NativeRunner {
         }
     }
 
+fn get_system_path() -> String {
+    let mut parts: Vec<String> = Vec::new();
+    if let Ok(home) = std::env::var("HOME") {
+        parts.push(format!("{}/.local/bin", home));
+        parts.push(format!("{}/.cargo/bin", home));
+        parts.push(format!("{}/.bun/bin", home));
+        parts.push(format!("{}/.nvm/versions/node/current/bin", home));
+        parts.push(format!("{}/Library/Application Support/fnm/current/bin", home));
+    }
+    parts.push("/opt/homebrew/bin".to_string());
+    parts.push("/opt/homebrew/sbin".to_string());
+    parts.push("/usr/local/bin".to_string());
+    parts.push("/usr/local/sbin".to_string());
+    parts.push("/usr/bin".to_string());
+    parts.push("/bin".to_string());
+    parts.push("/usr/sbin".to_string());
+    parts.push("/sbin".to_string());
+
+    if let Ok(existing) = std::env::var("PATH") {
+        for p in existing.split(':') {
+            if !p.is_empty() && !parts.contains(&p.to_string()) {
+                parts.push(p.to_string());
+            }
+        }
+    }
+    parts.join(":")
+}
+
     #[allow(clippy::too_many_arguments)]
     async fn spawn_service_process(
         &self,
@@ -199,12 +227,18 @@ impl NativeRunner {
         let logs_clone = logs.clone();
         let svc_name = name.clone();
 
-        // Prepare shell command
+        // Prepare shell command with rich PATH environment
+        let enhanced_path = Self::get_system_path();
         let mut cmd = Command::new("sh");
         cmd.arg("-c").arg(&command_str);
         cmd.current_dir(&working_dir);
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
+        cmd.env("PATH", &enhanced_path);
+
+        if let Ok(home) = std::env::var("HOME") {
+            cmd.env("HOME", home);
+        }
 
         for (k, v) in &env_vars {
             cmd.env(k, v);
