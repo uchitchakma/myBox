@@ -230,6 +230,15 @@ function mockHandler<T>(cmd: string, args: Record<string, unknown>): Promise<T> 
     case "save_app_config":
       return Promise.resolve(true as unknown as T);
 
+    case "launch_project":
+      return Promise.resolve("✓ Project launched successfully in myBox (Mock Dev Mode)" as unknown as T);
+
+    case "compose_up":
+      return Promise.resolve("✓ myBox project up" as unknown as T);
+
+    case "compose_down":
+      return Promise.resolve("✓ myBox project down" as unknown as T);
+
     default:
       return Promise.reject(new Error(`Unknown command: ${cmd}`));
   }
@@ -257,4 +266,8 @@ export const api = {
   getAppConfig: () => callTauri<AppConfig>("get_app_config"),
   saveAppConfig: (config: AppConfig) =>
     callTauri<void>("save_app_config", { config }),
+  launchProject: (projectPath: string, projectType: string, port: number) =>
+    callTauri<string>("launch_project", { projectPath, projectType, port }),
+  composeUp: (path?: string) => callTauri<string>("compose_up", { path }),
+  composeDown: (path?: string) => callTauri<string>("compose_down", { path }),
 };

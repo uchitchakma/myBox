@@ -9,6 +9,7 @@ import { StatsView } from "./components/StatsView";
 import { SettingsView } from "./components/SettingsView";
 import { LogsModal } from "./components/LogsModal";
 import { AboutModal } from "./components/AboutModal";
+import { NewProjectModal } from "./components/NewProjectModal";
 import { api } from "./api";
 import {
   AppConfig,
@@ -36,6 +37,7 @@ export function App() {
   const [containerLogs, setContainerLogs] = useState<ContainerLogs | null>(null);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isLaunchModalOpen, setIsLaunchModalOpen] = useState(false);
 
   // Load All Data
   const loadData = useCallback(async () => {
@@ -146,6 +148,7 @@ export function App() {
           metrics={metrics}
           onRefresh={handleRefresh}
           onPrune={handlePrune}
+          onOpenLaunchModal={() => setIsLaunchModalOpen(true)}
           isRefreshing={isRefreshing}
         />
 
@@ -191,6 +194,16 @@ export function App() {
           )}
         </div>
       </main>
+
+      {/* Launch New Project Modal */}
+      <NewProjectModal
+        isOpen={isLaunchModalOpen}
+        onClose={() => setIsLaunchModalOpen(false)}
+        onLaunchSuccess={loadData}
+        onLaunch={async (path, type, port) => {
+          return await api.launchProject(path, type, port);
+        }}
+      />
 
       {/* Logs Modal */}
       {selectedLogsContainer && (

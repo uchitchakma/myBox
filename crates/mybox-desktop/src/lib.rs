@@ -140,6 +140,31 @@ fn save_app_config(config: AppConfig) -> Result<(), String> {
     config.save().map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn launch_project(
+    project_path: String,
+    project_type: String,
+    port: u16,
+) -> Result<String, String> {
+    mybox_core::ProjectManager::launch_project(&project_path, &project_type, port)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn compose_up(path: Option<String>) -> Result<String, String> {
+    mybox_core::ProjectManager::compose_up(path)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn compose_down(path: Option<String>) -> Result<String, String> {
+    mybox_core::ProjectManager::compose_down(path)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -171,6 +196,9 @@ pub fn run() {
             get_app_info,
             get_app_config,
             save_app_config,
+            launch_project,
+            compose_up,
+            compose_down,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");

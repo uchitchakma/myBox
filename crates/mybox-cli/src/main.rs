@@ -98,6 +98,20 @@ enum Commands {
     /// Reclaim disk space by pruning stopped containers & dangling images
     Prune,
 
+    /// Start all containers defined in mybox.yml or docker-compose.yml
+    Up {
+        /// Optional directory path
+        #[arg(short, long)]
+        path: Option<String>,
+    },
+
+    /// Stop all containers defined in mybox.yml or docker-compose.yml
+    Down {
+        /// Optional directory path
+        #[arg(short, long)]
+        path: Option<String>,
+    },
+
     /// Run myBox in headless server daemon mode
     Server {
         /// Port to bind the HTTP status daemon
@@ -384,6 +398,26 @@ async fn main() -> Result<()> {
                 "  • Space reclaimed:    {} MB",
                 format!("{:.1}", res.space_reclaimed_mb).cyan().bold()
             );
+        }
+
+        Some(Commands::Up { path }) => {
+            let pb = ProgressBar::new_spinner();
+            pb.set_message("⚡ Launching myBox project containers...");
+            pb.enable_steady_tick(Duration::from_millis(80));
+
+            let res = mybox_core::ProjectManager::compose_up(path).await?;
+            pb.finish_and_clear();
+            println!("{}", res.green().bold());
+        }
+
+        Some(Commands::Down { path }) => {
+            let pb = ProgressBar::new_spinner();
+            pb.set_message("⏳ Stopping myBox project containers...");
+            pb.enable_steady_tick(Duration::from_millis(80));
+
+            let res = mybox_core::ProjectManager::compose_down(path).await?;
+            pb.finish_and_clear();
+            println!("{}", res.yellow().bold());
         }
 
         Some(Commands::Server { port }) => {

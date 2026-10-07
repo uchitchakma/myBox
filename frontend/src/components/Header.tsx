@@ -1,5 +1,5 @@
 import React from "react";
-import { RefreshCw, Trash2, Github, CheckCircle2, AlertCircle } from "lucide-react";
+import { RefreshCw, Trash2, Github, CheckCircle2, AlertCircle, Rocket } from "lucide-react";
 import { SystemMetrics } from "../types";
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   metrics: SystemMetrics | null;
   onRefresh: () => void;
   onPrune: () => void;
+  onOpenLaunchModal: () => void;
   isRefreshing: boolean;
 }
 
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   metrics,
   onRefresh,
   onPrune,
+  onOpenLaunchModal,
   isRefreshing,
 }) => {
   const titles: Record<string, { title: string; desc: string }> = {
@@ -81,6 +83,15 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
         </div>
+
+        {/* Launch Project Button */}
+        <button
+          onClick={onOpenLaunchModal}
+          className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-xs font-semibold text-white shadow-md shadow-brand-500/20 transition"
+        >
+          <Rocket className="w-3.5 h-3.5" />
+          <span>Launch Project</span>
+        </button>
 
         {/* Action Buttons */}
         <button
