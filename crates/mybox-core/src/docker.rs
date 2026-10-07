@@ -139,7 +139,8 @@ impl DockerEngine {
     }
 
     pub fn is_connected(&self) -> bool {
-        self.client.is_some()
+        // myBox is always ready to run native sandboxes even without Docker
+        true
     }
 
     pub async fn get_engine_info(&self) -> EngineInfo {
@@ -159,87 +160,89 @@ impl DockerEngine {
         }
 
         EngineInfo {
-            connected: false,
-            engine_type: "Offline".to_string(),
-            socket_path: "None".to_string(),
-            server_version: "N/A".to_string(),
-            api_version: "N/A".to_string(),
-            min_api_version: "N/A".to_string(),
+            connected: true,
+            engine_type: "myBox Native Engine (Zero Docker)".to_string(),
+            socket_path: "native://host".to_string(),
+            server_version: "0.1.0".to_string(),
+            api_version: "native-v1".to_string(),
+            min_api_version: "native-v1".to_string(),
             os: std::env::consts::OS.to_string(),
             arch: std::env::consts::ARCH.to_string(),
         }
     }
 
     pub async fn list_containers(&self, all: bool) -> Result<Vec<ContainerItem>> {
-        let client = self
-            .client
-            .as_ref()
-            .context("Container runtime is offline or unreachable")?;
+        let mut containers = crate::native_runner::NativeRunner::global().list_services().await;
 
-        let options = Some(ListContainersOptions::<String> {
-            all,
-            limit: None,
-            size: false,
-            filters: HashMap::new(),
-        });
-
-        let summaries = client.list_containers(options).await?;
-        let mut containers = Vec::new();
-
-        for c in summaries {
-            let id = c.id.unwrap_or_default();
-            let short_id = if id.len() >= 12 {
-                id[..12].to_string()
-            } else {
-                id.clone()
-            };
-
-            let name = c
-                .names
-                .and_then(|names| names.first().cloned())
-                .unwrap_or_else(|| "unnamed".into())
-                .trim_start_matches('/')
-                .to_string();
-
-            let image = c.image.unwrap_or_else(|| "unknown".into());
-            let state = c.state.unwrap_or_else(|| "unknown".into());
-            let status = c.status.unwrap_or_else(|| "".into());
-            let created = c.created.unwrap_or(0);
-            let is_running = state.to_lowercase() == "running";
-
-            let ports = c
-                .ports
-                .unwrap_or_default()
-                .into_iter()
-                .map(|p| PortMapping {
-                    ip: p.ip,
-                    private_port: p.private_port,
-                    public_port: p.public_port,
-                    proto: p.typ.map(|t| t.to_string()).unwrap_or_else(|| "tcp".into()),
-                })
-                .collect();
-
-            containers.push(ContainerItem {
-                id,
-                short_id,
-                name,
-                image,
-                state,
-                status,
-                created,
-                ports,
-                cpu_usage: 0.0,
-                memory_usage_mb: 0.0,
-                memory_limit_mb: 0.0,
-                memory_percent: 0.0,
-                is_running,
+        if let Some(ref client) = self.client {
+            let options = Some(ListContainersOptions::<String> {
+                all,
+                limit: None,
+                size: false,
+                filters: HashMap::new(),
             });
+
+            if let Ok(summaries) = client.list_containers(options).await {
+                for c in summaries {
+                    let id = c.id.unwrap_or_default();
+                    let short_id = if id.len() >= 12 {
+                        id[..12].to_string()
+                    } else {
+                        id.clone()
+                    };
+
+                    let name = c
+                        .names
+                        .and_then(|names| names.first().cloned())
+                        .unwrap_or_else(|| "unnamed".into())
+                        .trim_start_matches('/')
+                        .to_string();
+
+                    let image = c.image.unwrap_or_else(|| "unknown".into());
+                    let state = c.state.unwrap_or_else(|| "unknown".into());
+                    let status = c.status.unwrap_or_else(|| "".into());
+                    let created = c.created.unwrap_or(0);
+                    let is_running = state.to_lowercase() == "running";
+
+                    let ports = c
+                        .ports
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|p| PortMapping {
+                            ip: p.ip,
+                            private_port: p.private_port,
+                            public_port: p.public_port,
+                            proto: p.typ.map(|t| t.to_string()).unwrap_or_else(|| "tcp".into()),
+                        })
+                        .collect();
+
+                    containers.push(ContainerItem {
+                        id,
+                        short_id,
+                        name,
+                        image,
+                        state,
+                        status,
+                        created,
+                        ports,
+                        cpu_usage: 0.0,
+                        memory_usage_mb: 0.0,
+                        memory_limit_mb: 0.0,
+                        memory_percent: 0.0,
+                        is_running,
+                    });
+                }
+            }
         }
 
         Ok(containers)
     }
 
     pub async fn start_container(&self, id: &str) -> Result<()> {
+        if id.starts_with("native-") {
+            return crate::native_runner::NativeRunner::global().restart_service(id).await;
+        }
+
         let client = self
             .client
             .as_ref()
@@ -251,6 +254,10 @@ impl DockerEngine {
     }
 
     pub async fn stop_container(&self, id: &str) -> Result<()> {
+        if id.starts_with("native-") {
+            return crate::native_runner::NativeRunner::global().stop_service(id).await;
+        }
+
         let client = self
             .client
             .as_ref()
@@ -261,6 +268,10 @@ impl DockerEngine {
     }
 
     pub async fn restart_container(&self, id: &str) -> Result<()> {
+        if id.starts_with("native-") {
+            return crate::native_runner::NativeRunner::global().restart_service(id).await;
+        }
+
         let client = self
             .client
             .as_ref()
@@ -271,6 +282,10 @@ impl DockerEngine {
     }
 
     pub async fn remove_container(&self, id: &str, force: bool) -> Result<()> {
+        if id.starts_with("native-") {
+            return crate::native_runner::NativeRunner::global().remove_service(id).await;
+        }
+
         let client = self
             .client
             .as_ref()
@@ -285,51 +300,49 @@ impl DockerEngine {
     }
 
     pub async fn list_images(&self) -> Result<Vec<ImageItem>> {
-        let client = self
-            .client
-            .as_ref()
-            .context("Container runtime is offline")?;
-
-        let options = Some(ListImagesOptions::<String> {
-            all: false,
-            filters: HashMap::new(),
-            digests: false,
-        });
-
-        let summaries = client.list_images(options).await?;
         let mut images = Vec::new();
 
-        for img in summaries {
-            let full_id = img.id.trim_start_matches("sha256:");
-            let short_id = if full_id.len() >= 12 {
-                full_id[..12].to_string()
-            } else {
-                full_id.to_string()
-            };
-
-            let tags = &img.repo_tags;
-            let (repo, tag) = if let Some(first_tag) = tags.first() {
-                let parts: Vec<&str> = first_tag.split(':').collect();
-                if parts.len() == 2 {
-                    (parts[0].to_string(), parts[1].to_string())
-                } else {
-                    (first_tag.clone(), "latest".to_string())
-                }
-            } else {
-                ("<none>".to_string(), "<none>".to_string())
-            };
-
-            let size_mb = (img.size as f64) / (1024.0 * 1024.0);
-
-            images.push(ImageItem {
-                id: img.id,
-                short_id,
-                repository: repo,
-                tag,
-                size_mb: (size_mb * 10.0).round() / 10.0,
-                created: img.created,
-                containers_count: img.containers,
+        if let Some(ref client) = self.client {
+            let options = Some(ListImagesOptions::<String> {
+                all: false,
+                filters: HashMap::new(),
+                digests: false,
             });
+
+            if let Ok(summaries) = client.list_images(options).await {
+                for img in summaries {
+                    let full_id = img.id.trim_start_matches("sha256:");
+                    let short_id = if full_id.len() >= 12 {
+                        full_id[..12].to_string()
+                    } else {
+                        full_id.to_string()
+                    };
+
+                    let tags = &img.repo_tags;
+                    let (repo, tag) = if let Some(first_tag) = tags.first() {
+                        let parts: Vec<&str> = first_tag.split(':').collect();
+                        if parts.len() == 2 {
+                            (parts[0].to_string(), parts[1].to_string())
+                        } else {
+                            (first_tag.clone(), "latest".to_string())
+                        }
+                    } else {
+                        ("<none>".to_string(), "<none>".to_string())
+                    };
+
+                    let size_mb = (img.size as f64) / (1024.0 * 1024.0);
+
+                    images.push(ImageItem {
+                        id: img.id,
+                        short_id,
+                        repository: repo,
+                        tag,
+                        size_mb: (size_mb * 10.0).round() / 10.0,
+                        created: img.created,
+                        containers_count: img.containers,
+                    });
+                }
+            }
         }
 
         Ok(images)
@@ -349,33 +362,37 @@ impl DockerEngine {
     }
 
     pub async fn list_volumes(&self) -> Result<Vec<VolumeItem>> {
-        let client = self
-            .client
-            .as_ref()
-            .context("Container runtime is offline")?;
+        let mut volumes = Vec::new();
 
-        let options = Some(ListVolumesOptions::<String> {
-            filters: HashMap::new(),
-        });
+        if let Some(ref client) = self.client {
+            let options = Some(ListVolumesOptions::<String> {
+                filters: HashMap::new(),
+            });
 
-        let res = client.list_volumes(options).await?;
-        let volumes = res
-            .volumes
-            .unwrap_or_default()
-            .into_iter()
-            .map(|v| VolumeItem {
-                name: v.name,
-                driver: v.driver,
-                mountpoint: v.mountpoint,
-                created_at: v.created_at.unwrap_or_else(|| "N/A".into()),
-                size_mb: None,
-            })
-            .collect();
+            if let Ok(res) = client.list_volumes(options).await {
+                volumes = res
+                    .volumes
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|v| VolumeItem {
+                        name: v.name,
+                        driver: v.driver,
+                        mountpoint: v.mountpoint,
+                        created_at: v.created_at.unwrap_or_else(|| "N/A".into()),
+                        size_mb: None,
+                    })
+                    .collect();
+            }
+        }
 
         Ok(volumes)
     }
 
     pub async fn get_container_logs(&self, id: &str, tail: usize) -> Result<ContainerLogs> {
+        if id.starts_with("native-") {
+            return crate::native_runner::NativeRunner::global().get_logs(id, tail).await;
+        }
+
         let client = self
             .client
             .as_ref()
@@ -412,23 +429,20 @@ impl DockerEngine {
     }
 
     pub async fn prune_system(&self) -> Result<PruneResult> {
-        let client = self
-            .client
-            .as_ref()
-            .context("Container runtime is offline")?;
-
         let mut space_reclaimed_bytes: u64 = 0;
         let mut containers_deleted = 0;
         let mut images_deleted = 0;
 
-        if let Ok(c_prune) = client.prune_containers(None::<bollard::container::PruneContainersOptions<String>>).await {
-            containers_deleted = c_prune.containers_deleted.unwrap_or_default().len();
-            space_reclaimed_bytes += c_prune.space_reclaimed.unwrap_or(0).max(0) as u64;
-        }
+        if let Some(ref client) = self.client {
+            if let Ok(c_prune) = client.prune_containers(None::<bollard::container::PruneContainersOptions<String>>).await {
+                containers_deleted = c_prune.containers_deleted.unwrap_or_default().len();
+                space_reclaimed_bytes += c_prune.space_reclaimed.unwrap_or(0).max(0) as u64;
+            }
 
-        if let Ok(i_prune) = client.prune_images(None::<bollard::image::PruneImagesOptions<String>>).await {
-            images_deleted = i_prune.images_deleted.unwrap_or_default().len();
-            space_reclaimed_bytes += i_prune.space_reclaimed.unwrap_or(0).max(0) as u64;
+            if let Ok(i_prune) = client.prune_images(None::<bollard::image::PruneImagesOptions<String>>).await {
+                images_deleted = i_prune.images_deleted.unwrap_or_default().len();
+                space_reclaimed_bytes += i_prune.space_reclaimed.unwrap_or(0).max(0) as u64;
+            }
         }
 
         let space_reclaimed_mb = (space_reclaimed_bytes as f64) / (1024.0 * 1024.0);

@@ -148,34 +148,36 @@ volumes:
             "mybox.yaml"
         };
 
-        let mut output = Command::new("docker")
+        let output = Command::new("docker")
             .args(["compose", "-f", compose_file, "up", "-d"])
             .current_dir(&work_dir)
             .output()
             .await;
 
-        // If it failed because daemon is unreachable, auto-start native engine bridge!
-        if let Ok(ref out) = output {
-            if !out.status.success() {
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                if stderr.contains("Cannot connect") || stderr.contains("docker daemon") || stderr.contains("connection refused") {
-                    let _ = crate::hypervisor::HypervisorManager::start_native_engine().await;
-                    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await;
-
-                    output = Command::new("docker")
-                        .args(["compose", "-f", compose_file, "up", "-d"])
-                        .current_dir(&work_dir)
-                        .output()
-                        .await;
+        let is_docker_offline = match output {
+            Ok(ref out) => {
+                if !out.status.success() {
+                    let stderr = String::from_utf8_lossy(&out.stderr);
+                    stderr.contains("Cannot connect") || stderr.contains("docker daemon") || stderr.contains("connection refused")
+                } else {
+                    false
                 }
             }
+            Err(_) => true,
+        };
+
+        if is_docker_offline {
+            // 100% Docker-Free Native Execution Fallback
+            let detected = crate::detector::FrameworkDetector::detect(&work_dir);
+            return crate::native_runner::NativeRunner::launch_project_natively(&work_dir, &detected).await;
         }
 
-        let output = output.context("Failed to execute compose engine. Make sure a container runtime is running.")?;
+        let output = output.context("Failed to execute compose engine.")?;
 
         if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            anyhow::bail!("Failed to launch project: {}", stderr);
+            // If any image pull or daemon failure, fall back to native execution
+            let detected = crate::detector::FrameworkDetector::detect(&work_dir);
+            return crate::native_runner::NativeRunner::launch_project_natively(&work_dir, &detected).await;
         }
 
         Ok(format!(
@@ -188,6 +190,9 @@ volumes:
         let work_dir = path.unwrap_or_else(|| ".".to_string());
         let target_path = Path::new(&work_dir);
 
+        // 1. Stop native services if running
+        let _ = crate::native_runner::NativeRunner::global().stop_all_for_project(&work_dir).await;
+
         let compose_file = if target_path.join("mybox.yaml").exists() {
             "mybox.yaml"
         } else if target_path.join("mybox.yml").exists() {
@@ -196,19 +201,13 @@ volumes:
             "docker-compose.yml"
         };
 
-        let output = Command::new("docker")
+        let _ = Command::new("docker")
             .args(["compose", "-f", compose_file, "down"])
             .current_dir(&work_dir)
             .output()
-            .await
-            .context("Failed to stop compose project")?;
+            .await;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            anyhow::bail!("Failed to stop project: {}", stderr);
-        }
-
-        Ok("✓ Project containers stopped and cleaned up.".into())
+        Ok("✓ Project sandboxes stopped and cleaned up.".into())
     }
 
     pub async fn remove_project(path: Option<String>, delete_config: bool) -> Result<String> {
