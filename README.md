@@ -15,11 +15,11 @@
 
 ---
 
-## 🌟 Overview
+## 🌟 What is myBox?
 
-**myBox** is an open-source, ultra-lightweight, and high-performance container management tool engineered with **Tauri 2.0**, **Rust**, and **React**.
+**myBox** is an open-source, ultra-lightweight container tool that lets you **run, containerize, and manage any project in isolated sandboxes** without polluting your machine with multiple language versions, database installs, or conflicting dependencies.
 
-Unlike heavy alternatives that bundle a full Chromium browser and consume 500MB+ of idle RAM, **myBox** runs natively on your operating system’s web engine and hypervisor interfaces, consuming only **~25MB of RAM** with **instant startup**.
+Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written in **Rust** and **Tauri 2.0**, using only **~25MB of RAM** with instant sub-second startup!
 
 * **🏢 Company:** [UCDREAMS TECHNOLOGIES LLP](https://ucdreams.com)
 * **👨‍💻 Lead Developer:** [Uchit Chakma](https://uchitchakma.com)
@@ -28,115 +28,175 @@ Unlike heavy alternatives that bundle a full Chromium browser and consume 500MB+
 
 ---
 
-## 🚀 Key Features
+## ⚡ Quick Cheat Sheet (Common Commands)
 
-* **⚡ Ultra-Lightweight Footprint:** ~12MB installer size and ~25MB idle memory usage.
-* **🖥️ Dual Mode:**
-  * **Desktop GUI App:** Sleek dark-mode interface with live resource graphs, container controls, and log streaming.
-  * **Headless CLI (`mybox`):** High-speed terminal utility for local development and Linux/Ubuntu servers.
-* **🌐 Cross-Platform:** Single unified Rust & React codebase targeting macOS (Apple Silicon & Intel), Windows 10/11, and Linux (Ubuntu, Debian, Fedora, Arch).
-* **🔌 Socket Compatibility:** Auto-detects standard Docker sockets, OrbStack, Colima, rootless Podman, and Windows named pipes.
-* **🧹 One-Click Prune:** Instant disk reclamation for stopped containers and dangling image layers.
-* **📜 Real-time Log Streaming:** Integrated terminal-style log inspector with instant copy functionality.
-
----
-
-## 🏗️ Architecture
-
-```
-myBox/
-├── Cargo.toml                  # Cargo Workspace configuration
-├── crates/
-│   ├── mybox-core/             # Shared Rust container engine & metrics collector
-│   ├── mybox-cli/              # Headless CLI binary (`mybox`)
-│   └── mybox-desktop/          # Tauri 2.0 Desktop wrapper & native IPC
-├── frontend/                   # Modern React + Vite + TypeScript + Tailwind UI
-│   ├── src/components/         # Dashboard, Containers, Images, Volumes, Logs, Stats
-│   └── src/api.ts              # Tauri IPC bridge + Mock dev fallback
-├── docs/                       # Architecture & CLI manuals
-└── PROMPTS.md                  # Comprehensive AI Prompt Documentation Guide
-```
+| Task | Desktop App (GUI) | CLI (`mybox`) |
+| :--- | :--- | :--- |
+| **Launch Project** | Click `🚀 Launch Project` ➔ Pick folder ➔ Click Launch | `cd my-project && mybox up` |
+| **List Containers** | View **Dashboard** or **Containers** tab | `mybox ps` (or `mybox ps -a`) |
+| **Run command inside** | Open container logs/terminal | `mybox exec <name> <cmd>` |
+| **Live Shell** | Click terminal icon | `mybox exec <name>` (or `mybox sh <name>`) |
+| **Stream Live Logs** | Click `Logs` button next to any container | `mybox logs <name> --tail 50` |
+| **Stop Project** | Click `Stop` button | `mybox down` (or `mybox stop <name>`) |
+| **Restart** | Click `Restart` button | `mybox restart <name>` |
+| **Reclaim Disk Space** | Click `Prune System` button (Top Header) | `mybox prune` |
+| **View System Stats** | Visual CPU & RAM graphs in Header / Stats tab | `mybox stats` |
 
 ---
 
-## 💻 CLI Quickstart (`mybox`)
+## 🚀 How to Containerize & Run Any Project (In 2 Minutes)
 
-The `mybox` binary can be used standalone on any server or workstation without launching the GUI:
+### Option 1: Using the Desktop App (macOS & Windows)
+1. Open **myBox**.
+2. Click the crimson **`🚀 Launch Project`** button (in Sidebar or Header).
+3. Click **`📁 Select`** (or *Browse Finder*) to pick your project folder.
+4. Choose your tech stack:
+   * 📦 **Fullstack + Database** (Node.js/Next.js + PostgreSQL 16)
+   * ⚡ **Node.js / React / Next** (Alpine Linux runtime)
+   * 🐍 **Python / FastAPI / Django** (Python 3.12 Slim runtime)
+   * 🐘 **PHP / Laravel / WordPress** (PHP 8.3 + Apache runtime)
+5. Click **`Launch in myBox`** — **myBox automatically creates the configuration, starts the sandbox, and connects the ports!**
 
+---
+
+### Option 2: Using the CLI on Terminal or Linux Servers
 ```bash
-# List all running containers (alias: ps)
+# 1. Navigate to your project folder
+cd ~/my-projects/my-web-app
+
+# 2. Launch all project containers
+mybox up
+
+# 3. Check status
 mybox ps
 
-# List all containers (including stopped)
+# 4. View live logs
+mybox logs my-web-app
+
+# 5. Stop when finished
+mybox down
+```
+
+---
+
+## 📦 How Dependencies & Package Installs Work
+
+In myBox, **you never install tools globally on your host OS**. The container manages all dependencies:
+
+### 1. Python Packages (pip)
+Add your packages to `requirements.txt`:
+```text
+fastapi
+uvicorn
+pandas
+requests
+```
+myBox automatically installs them inside the container during launch!
+
+### 2. Node.js Packages (npm)
+Add your dependencies to `package.json`:
+```json
+{
+  "dependencies": {
+    "express": "^4.19.0",
+    "dotenv": "^16.4.5"
+  }
+}
+```
+myBox automatically runs `npm install` inside the container.
+
+### 3. Installing Packages On-The-Fly (Interactive Exec)
+To run a command or install something immediately in a running container:
+```bash
+# Open an interactive shell inside the container
+mybox exec my-web-app
+
+# Run a one-off command inside the container
+mybox exec my-web-app pip install requests
+mybox exec my-web-app npm install lodash
+```
+
+---
+
+## 💻 CLI Reference Manual
+
+```bash
+# List all running containers
+mybox ps
+
+# List all containers including stopped ones
 mybox ps --all
 
-# Live host CPU & RAM diagnostics
+# View instant CPU & Memory metrics
 mybox stats
 
 # Inspect local container images
 mybox images
 
-# Inspect persistent volumes
+# Inspect persistent storage volumes
 mybox volumes
 
-# View logs for a container
-mybox logs <container_name_or_id> --tail 50
+# View last 100 log lines
+mybox logs <container_name_or_id> --tail 100
 
-# Start / Stop / Restart / Remove
+# Start, Stop, Restart, Remove
 mybox start <container>
 mybox stop <container>
 mybox restart <container>
 mybox rm <container> --force
 
-# Reclaim disk space
+# Clean up dangling images and stopped containers
 mybox prune
 
-# Start the headless server monitor daemon
+# Start background server daemon for health monitoring
 mybox server --port 9090
+
+# View system and socket diagnostics
+mybox info
 ```
 
 ---
 
-## 🛠️ Development & Building
+## 🛠️ Building From Source
 
 ### Prerequisites
-* **Rust** (1.75+): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-* **Node.js** (v18+ / v20+): `node -v`
-* **Package Manager**: `npm`, `pnpm`, or `bun`
+* **Rust (1.75+)**: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+* **Node.js (18+)**: `node -v`
 
-### 1. Run the Desktop App in Development Mode
+### 1. Run Desktop App in Development Mode:
 ```bash
-# Install frontend dependencies
-cd frontend
-npm install
+# Install UI dependencies
+cd frontend && npm install
 
-# Start Tauri in development mode (launches the native desktop window with hot reload)
+# Run Tauri desktop app with hot reload
 cd ../crates/mybox-desktop
 cargo tauri dev
 ```
 
-### 2. Build the Desktop Installers
+### 2. Build Production Desktop App:
 ```bash
 cd crates/mybox-desktop
-cargo tauri build
+npm --prefix ../../frontend exec tauri build
 ```
 Outputs:
-* **macOS:** `target/release/bundle/dmg/myBox_0.1.0_universal.dmg`
-* **Windows:** `target/release/bundle/msi/myBox_0.1.0_x64_en-US.msi`
-* **Linux / Ubuntu:** `target/release/bundle/deb/mybox_0.1.0_amd64.deb` and `.AppImage`
+* **macOS:** `target/release/bundle/macos/myBox.app` & `.dmg`
+* **Windows:** `target/release/bundle/msi/myBox.msi`
+* **Linux:** `target/release/bundle/deb/mybox.deb` & `.AppImage`
 
-### 3. Build the Headless CLI
+### 3. Build Headless CLI:
 ```bash
 cargo build --release -p mybox-cli
-# The binary will be available at: target/release/mybox
+# Output binary: target/release/mybox
 ```
 
 ---
 
 ## 📄 License & Attribution
 
-This project is open-source under the **[MIT License](LICENSE)**.
+This project is free and open-source under the **[MIT License](LICENSE)**.
 
 * **Created by:** [UCDREAMS TECHNOLOGIES LLP](https://ucdreams.com)
-* **Developed by:** [Uchit Chakma](https://uchitchakma.com)
+* **Lead Developer:** [Uchit Chakma](https://uchitchakma.com)
+* **Website:** [ucdreams.com](https://ucdreams.com) • [uchitchakma.com](https://uchitchakma.com)
 * **GitHub:** [https://github.com/uchitchakma/myBox](https://github.com/uchitchakma/myBox)
+
