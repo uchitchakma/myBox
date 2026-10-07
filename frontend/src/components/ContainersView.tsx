@@ -10,8 +10,10 @@ import {
   Globe,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { ContainerItem, groupContainers, ContainerGroup } from "../types";
+import { api } from "../api";
 
 interface ContainersViewProps {
   containers: ContainerItem[];
@@ -154,6 +156,16 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
             <tbody className="divide-y divide-zinc-800/60">
               {filteredGroups.map((g) => {
                 const isExpanded = expandedGroups[g.key] ?? true;
+                const webPort =
+                  g.ports.find((p) => (p.public_port || p.private_port) === 3000) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 5173) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 80) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 8000) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 8080) ||
+                  g.ports[0];
+                const targetUrl = webPort
+                  ? `http://localhost:${webPort.public_port || webPort.private_port}`
+                  : null;
 
                 if (g.isGroup) {
                   return (
@@ -175,7 +187,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                             </button>
                             <div
                               className={`w-2.5 h-2.5 rounded-full ${
-                                g.is_running ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-zinc-600"
+                                g.is_running ? "bg-emerald-500 shadow-sm shadow-emerald-500/50 animate-pulse" : "bg-zinc-600"
                               }`}
                             />
                             <div>
@@ -216,25 +228,40 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
 
                         {/* Combined Ports */}
                         <td className="px-5 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {g.ports.map((p, idx) => (
-                              <a
-                                key={idx}
-                                href={`http://localhost:${p.public_port || p.private_port}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-brand-400 border border-zinc-800 hover:border-brand-500/40 text-[10px] font-mono transition"
-                              >
-                                <Globe className="w-2.5 h-2.5" />
-                                <span>{p.public_port || p.private_port} ↗</span>
-                              </a>
-                            ))}
+                          <div className="flex flex-wrap gap-1.5">
+                            {g.ports.map((p, idx) => {
+                              const pNum = p.public_port || p.private_port;
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() => api.openBrowser(`http://localhost:${pNum}`)}
+                                  title={`Open http://localhost:${pNum} in Browser`}
+                                  className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-brand-400 border border-zinc-800 hover:border-brand-500/40 text-[10px] font-mono transition"
+                                >
+                                  <Globe className="w-2.5 h-2.5" />
+                                  <span>{pNum} ↗</span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </td>
 
                         {/* Master Actions (Plays/Stops all services in 1-click) */}
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
+                            {/* Prominent Open Website Button on Stack Row */}
+                            {g.is_running && targetUrl && (
+                              <button
+                                onClick={() => api.openBrowser(targetUrl)}
+                                title={`Open ${targetUrl} in Browser`}
+                                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition transform hover:-translate-y-0.5"
+                              >
+                                <Globe className="w-3.5 h-3.5" />
+                                <span>Open Website</span>
+                                <ExternalLink className="w-3 h-3 opacity-80" />
+                              </button>
+                            )}
+
                             <button
                               onClick={() => onOpenLogs(g.services[0])}
                               title="View Application Logs"
@@ -284,101 +311,119 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
 
                       {/* Sub-Service Rows (Indented) */}
                       {isExpanded &&
-                        g.services.map((c) => (
-                          <tr
-                            key={c.id}
-                            className="bg-zinc-950/40 hover:bg-zinc-900/30 transition-colors duration-150"
-                          >
-                            <td className="px-5 py-2.5 pl-12">
-                              <div className="flex items-center space-x-2.5">
-                                <div
-                                  className={`w-2 h-2 rounded-full ${
-                                    c.is_running ? "bg-emerald-500" : "bg-zinc-600"
-                                  }`}
-                                />
-                                <div>
-                                  <span className="font-semibold text-zinc-200 block">
-                                    {c.name}
-                                  </span>
-                                  <span className="font-mono text-[10px] text-zinc-500">
-                                    {c.short_id}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
+                        g.services.map((c) => {
+                          const subPort = c.ports[0];
+                          const subUrl = subPort ? `http://localhost:${subPort.public_port || subPort.private_port}` : null;
 
-                            <td className="px-5 py-2.5">
-                              <span className="font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[10px]">
-                                {c.image}
-                              </span>
-                            </td>
-
-                            <td className="px-5 py-2.5">
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] ${
-                                  c.is_running
-                                    ? "bg-emerald-500/10 text-emerald-400"
-                                    : "bg-zinc-800 text-zinc-400"
-                                }`}
-                              >
-                                {c.status}
-                              </span>
-                            </td>
-
-                            <td className="px-5 py-2.5">
-                              <div className="flex flex-wrap gap-1">
-                                {c.ports.map((p, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 text-[10px] font-mono"
-                                  >
-                                    <Globe className="w-2.5 h-2.5 text-zinc-500" />
-                                    <span>
-                                      {p.public_port
-                                        ? `${p.public_port}:${p.private_port}`
-                                        : `${p.private_port}/${p.proto}`}
+                          return (
+                            <tr
+                              key={c.id}
+                              className="bg-zinc-950/40 hover:bg-zinc-900/30 transition-colors duration-150"
+                            >
+                              <td className="px-5 py-2.5 pl-12">
+                                <div className="flex items-center space-x-2.5">
+                                  <div
+                                    className={`w-2 h-2 rounded-full ${
+                                      c.is_running ? "bg-emerald-500" : "bg-zinc-600"
+                                    }`}
+                                  />
+                                  <div>
+                                    <span className="font-semibold text-zinc-200 block">
+                                      {c.name}
                                     </span>
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
+                                    <span className="font-mono text-[10px] text-zinc-500">
+                                      {c.short_id}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
 
-                            <td className="px-5 py-2.5 text-right">
-                              <div className="flex items-center justify-end space-x-1">
-                                <button
-                                  onClick={() => onOpenLogs(c)}
-                                  title="Service Logs"
-                                  className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
+                              <td className="px-5 py-2.5">
+                                <span className="font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[10px]">
+                                  {c.image}
+                                </span>
+                              </td>
+
+                              <td className="px-5 py-2.5">
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] ${
+                                    c.is_running
+                                      ? "bg-emerald-500/10 text-emerald-400"
+                                      : "bg-zinc-800 text-zinc-400"
+                                  }`}
                                 >
-                                  <FileText className="w-3 h-3" />
-                                </button>
-                                {c.is_running ? (
+                                  {c.status}
+                                </span>
+                              </td>
+
+                              <td className="px-5 py-2.5">
+                                <div className="flex flex-wrap gap-1">
+                                  {c.ports.map((p, idx) => {
+                                    const pNum = p.public_port || p.private_port;
+                                    return (
+                                      <button
+                                        key={idx}
+                                        onClick={() => api.openBrowser(`http://localhost:${pNum}`)}
+                                        title={`Open http://localhost:${pNum} in Browser`}
+                                        className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-brand-400 border border-zinc-800 text-[10px] font-mono transition"
+                                      >
+                                        <Globe className="w-2.5 h-2.5 text-zinc-500" />
+                                        <span>{pNum} ↗</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+
+                              <td className="px-5 py-2.5 text-right">
+                                <div className="flex items-center justify-end space-x-1">
+                                  {c.is_running && subUrl && (
+                                    <button
+                                      onClick={() => api.openBrowser(subUrl)}
+                                      title={`Open ${subUrl} in Browser`}
+                                      className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-brand-400 hover:text-white transition"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </button>
+                                  )}
                                   <button
-                                    onClick={() => onStop(c.id)}
-                                    title="Stop Service"
-                                    className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"
+                                    onClick={() => onOpenLogs(c)}
+                                    title="Service Logs"
+                                    className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
                                   >
-                                    <Square className="w-3 h-3" />
+                                    <FileText className="w-3 h-3" />
                                   </button>
-                                ) : (
-                                  <button
-                                    onClick={() => onStart(c.id)}
-                                    title="Start Service"
-                                    className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition"
-                                  >
-                                    <Play className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                  {c.is_running ? (
+                                    <button
+                                      onClick={() => onStop(c.id)}
+                                      title="Stop Service"
+                                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"
+                                    >
+                                      <Square className="w-3 h-3" />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => onStart(c.id)}
+                                      title="Start Service"
+                                      className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition"
+                                    >
+                                      <Play className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </React.Fragment>
                   );
                 }
 
                 // Standalone Single Container Row
                 const c = g.services[0];
+                const sPort = c.ports[0];
+                const sUrl = sPort ? `http://localhost:${sPort.public_port || sPort.private_port}` : null;
+
                 return (
                   <tr
                     key={c.id}
@@ -425,25 +470,38 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                         <span className="text-zinc-500">-</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
-                          {c.ports.map((p, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-300 border border-zinc-800 text-[10px] font-mono"
-                            >
-                              <Globe className="w-2.5 h-2.5 text-zinc-500" />
-                              <span>
-                                {p.public_port
-                                  ? `${p.public_port}:${p.private_port}`
-                                  : `${p.private_port}/${p.proto}`}
-                              </span>
-                            </span>
-                          ))}
+                          {c.ports.map((p, idx) => {
+                            const pNum = p.public_port || p.private_port;
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => api.openBrowser(`http://localhost:${pNum}`)}
+                                title={`Open http://localhost:${pNum} in Browser`}
+                                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-brand-400 border border-zinc-800 text-[10px] font-mono transition"
+                              >
+                                <Globe className="w-2.5 h-2.5 text-zinc-500" />
+                                <span>{pNum} ↗</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end space-x-1.5">
+                        {c.is_running && sUrl && (
+                          <button
+                            onClick={() => api.openBrowser(sUrl)}
+                            title={`Open ${sUrl} in Browser`}
+                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md transition"
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                            <span>Open</span>
+                            <ExternalLink className="w-3 h-3 opacity-80" />
+                          </button>
+                        )}
+
                         <button
                           onClick={() => onOpenLogs(c)}
                           title="View Logs"

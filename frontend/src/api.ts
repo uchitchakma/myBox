@@ -302,7 +302,20 @@ export const api = {
   startNativeEngine: () => callTauri<string>("start_native_engine"),
   stopNativeEngine: () => callTauri<string>("stop_native_engine"),
   getNativeEngineStatus: () => callTauri<{ is_running: boolean; socket_path: string }>("get_native_engine_status"),
+  openBrowser: async (url: string) => {
+    try {
+      if (isTauri()) {
+        const { openUrl } = await import("@tauri-apps/plugin-opener");
+        await openUrl(url);
+        return;
+      }
+    } catch (e) {
+      console.warn("Tauri opener fallback:", e);
+    }
+    window.open(url, "_blank");
+  },
 };
+
 
 
 

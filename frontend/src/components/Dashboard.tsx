@@ -9,8 +9,11 @@ import {
   FileText,
   Terminal,
   Rocket,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { ContainerItem, SystemMetrics, groupContainers } from "../types";
+import { api } from "../api";
 
 interface DashboardProps {
   metrics: SystemMetrics | null;
@@ -187,19 +190,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   });
                 };
 
+                const webPort =
+                  g.ports.find((p) => (p.public_port || p.private_port) === 3000) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 5173) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 80) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 8000) ||
+                  g.ports.find((p) => (p.public_port || p.private_port) === 8080) ||
+                  g.ports[0];
+                const targetUrl = webPort
+                  ? `http://localhost:${webPort.public_port || webPort.private_port}`
+                  : null;
+
                 return (
                   <div
                     key={g.key}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 transition"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/60 transition gap-3"
                   >
                     <div className="flex items-center space-x-3">
                       <div
                         className={`w-2.5 h-2.5 rounded-full ${
-                          isRunning ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-zinc-600"
+                          isRunning ? "bg-emerald-500 shadow-sm shadow-emerald-500/50 animate-pulse" : "bg-zinc-600"
                         }`}
                       />
                       <div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-wrap">
                           <span className="text-xs font-bold text-white">
                             {g.projectName}
                           </span>
@@ -212,15 +226,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               {primaryService.short_id}
                             </span>
                           )}
+
+                          {/* Quick clickable port pills */}
+                          {isRunning &&
+                            g.ports.map((p, idx) => {
+                              const portNum = p.public_port || p.private_port;
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() => api.openBrowser(`http://localhost:${portNum}`)}
+                                  title={`Open http://localhost:${portNum} in Browser`}
+                                  className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-emerald-400 border border-zinc-700/60 text-[10px] font-mono transition"
+                                >
+                                  <span>:{portNum}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                                </button>
+                              );
+                            })}
                         </div>
                         <p className="text-[11px] text-zinc-400 mt-0.5">{g.image}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[11px] text-zinc-400 mr-2 hidden sm:inline">
+                    <div className="flex items-center space-x-2 self-end sm:self-auto">
+                      <span className="text-[11px] text-zinc-400 mr-2 hidden md:inline">
                         {g.status}
                       </span>
+
+                      {/* Prominent Open Website Button */}
+                      {isRunning && targetUrl && (
+                        <button
+                          onClick={() => api.openBrowser(targetUrl)}
+                          title={`Open ${targetUrl} in Browser`}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition transform hover:-translate-y-0.5"
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                          <span>Open Website</span>
+                          <ExternalLink className="w-3 h-3 opacity-80" />
+                        </button>
+                      )}
 
                       <button
                         onClick={() => onOpenLogs(primaryService)}
