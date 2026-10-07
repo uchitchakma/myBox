@@ -148,12 +148,30 @@ volumes:
             "mybox.yaml"
         };
 
-        let output = Command::new("docker")
+        let mut output = Command::new("docker")
             .args(["compose", "-f", compose_file, "up", "-d"])
             .current_dir(&work_dir)
             .output()
-            .await
-            .context("Failed to execute compose engine. Make sure a container runtime is running.")?;
+            .await;
+
+        // If it failed because daemon is unreachable, auto-start native engine bridge!
+        if let Ok(ref out) = output {
+            if !out.status.success() {
+                let stderr = String::from_utf8_lossy(&out.stderr);
+                if stderr.contains("Cannot connect") || stderr.contains("docker daemon") || stderr.contains("connection refused") {
+                    let _ = crate::hypervisor::HypervisorManager::start_native_engine().await;
+                    tokio::time::sleep(tokio::time::Duration::from_secs(4)).await;
+
+                    output = Command::new("docker")
+                        .args(["compose", "-f", compose_file, "up", "-d"])
+                        .current_dir(&work_dir)
+                        .output()
+                        .await;
+                }
+            }
+        }
+
+        let output = output.context("Failed to execute compose engine. Make sure a container runtime is running.")?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);

@@ -549,18 +549,43 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           {/* Status Message */}
           {statusMessage && (
             <div
-              className={`p-3 rounded-xl flex items-center space-x-2 text-xs font-medium border ${
+              className={`p-3 rounded-xl flex items-center justify-between text-xs font-medium border ${
                 isError
                   ? "bg-red-500/10 text-red-400 border-red-500/20"
                   : "bg-brand-500/10 text-brand-300 border-brand-500/20"
               }`}
             >
-              {isError ? (
-                <AlertCircle className="w-4 h-4 shrink-0" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-brand-400 animate-pulse" />
+              <div className="flex items-center space-x-2 truncate mr-2">
+                {isError ? (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-brand-400 animate-pulse" />
+                )}
+                <span className="truncate">{statusMessage}</span>
+              </div>
+              {isError && (statusMessage.includes("connect") || statusMessage.includes("daemon") || statusMessage.includes("runtime")) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setStatusMessage("⚡ Starting background Container Engine...");
+                    setIsError(false);
+                    try {
+                      await api.startNativeEngine();
+                      setStatusMessage("✓ Engine online! Retrying project launch...");
+                      setTimeout(() => {
+                        const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                        handleLaunch(fakeEvent);
+                      }, 1500);
+                    } catch (e) {
+                      setIsError(true);
+                      setStatusMessage(String(e));
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-[10px] shrink-0 transition"
+                >
+                  ⚡ Start Engine & Retry
+                </button>
               )}
-              <span className="truncate">{statusMessage}</span>
             </div>
           )}
 
