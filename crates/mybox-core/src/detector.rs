@@ -111,7 +111,7 @@ services:
     volumes:
       - ./{b_name}:/app
     ports:
-      - "{b_port}:{b_port}"
+      - "{b_port}:{b_base_port}"
     environment:
       - DATABASE_URL=postgres://mybox:mybox123@database:5432/mybox_db
       - REDIS_URL=redis://cache:6379/0
@@ -137,7 +137,7 @@ services:
 
 volumes:
   mybox_pgdata:
-"#, f_name=f_name, b_name=b_name, b_image=b_image, b_cmd=b_cmd, b_port=b_port);
+"#, f_name=f_name, b_name=b_name, b_image=b_image, b_cmd=b_cmd, b_port=b_port, b_base_port=b_base_port);
 
             return DetectedProject {
                 framework_id: "fullstack_multi".into(),
