@@ -54,93 +54,110 @@ impl NativeRunner {
         // Stop any previously running native services for this project first
         let _ = runner.stop_all_for_project(project_path).await;
 
-        if detected.is_multi_service && !detected.services.is_empty() {
+        let has_frontend_dir = root.join("frontend").is_dir() || root.join("client").is_dir() || root.join("web").is_dir();
+        let has_backend_dir = root.join("backend").is_dir() || root.join("server").is_dir() || root.join("api").is_dir();
+
+        if detected.is_multi_service || (has_frontend_dir && has_backend_dir) {
             // Dual service stack: frontend + backend
             let mut launched_names = Vec::new();
+            let f_dir_name = if root.join("frontend").is_dir() { "frontend" } else if root.join("client").is_dir() { "client" } else { "web" };
+            let b_dir_name = if root.join("backend").is_dir() { "backend" } else if root.join("server").is_dir() { "server" } else { "api" };
 
-            for svc in &detected.services {
-                let (svc_dir, svc_cmd, runtime_label) = if svc.name == "frontend" || svc.name == "client" || svc.name == "web" {
-                    let dir = if root.join("frontend").is_dir() {
-                        root.join("frontend")
-                    } else if root.join("client").is_dir() {
-                        root.join("client")
-                    } else {
-                        root.to_path_buf()
-                    };
-                    (dir, "npm run dev || npm start".to_string(), "node (native)".to_string())
-                } else if svc.name == "backend" || svc.name == "server" || svc.name == "api" {
-                    let dir = if root.join("backend").is_dir() {
-                        root.join("backend")
-                    } else if root.join("server").is_dir() {
-                        root.join("server")
-                    } else {
-                        root.to_path_buf()
-                    };
+            let f_path = root.join(f_dir_name);
+            let b_path = root.join(b_dir_name);
 
-                    let cmd = if dir.join("Cargo.toml").exists() {
-                        "cargo run".to_string()
-                    } else if dir.join("go.mod").exists() {
-                        "go run . || go run main.go".to_string()
-                    } else if dir.join("package.json").exists() {
-                        "npm run dev || npm start".to_string()
-                    } else {
-                        "python main.py || python app.py".to_string()
-                    };
+            // 1. Backend Service
+            let (b_cmd, b_label, b_port) = if b_path.join("Cargo.toml").exists() {
+                ("cargo run".to_string(), "rust (native)".to_string(), 8080)
+            } else if b_path.join("go.mod").exists() || b_path.join("main.go").exists() {
+                ("go run . || go run main.go".to_string(), "go (native)".to_string(), 8080)
+            } else if b_path.join("package.json").exists() {
+                ("npm run dev || npm start".to_string(), "node (native)".to_string(), 8000)
+            } else {
+                ("python main.py || python app.py".to_string(), "python (native)".to_string(), 8000)
+            };
 
-                    let label = if dir.join("Cargo.toml").exists() {
-                        "rust (native)".to_string()
-                    } else if dir.join("go.mod").exists() {
-                        "go (native)".to_string()
-                    } else {
-                        "python (native)".to_string()
-                    };
+            let b_id = format!("native-backend-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
+            let b_short_id = b_id.chars().take(12).collect::<String>();
+            let b_envs = vec![
+                ("PORT".to_string(), b_port.to_string()),
+                ("DATABASE_URL".to_string(), "postgres://localhost:5432/mybox_db".to_string()),
+            ];
 
-                    (dir, cmd, label)
-                } else {
-                    // Database / cache skipped in pure native host mode, or marked as managed
-                    continue;
-                };
+            runner.spawn_service_process(
+                b_id,
+                b_short_id,
+                "backend".to_string(),
+                format!("Backend API Server (Port {})", b_port),
+                b_label,
+                b_cmd,
+                b_path,
+                project_path.to_string(),
+                b_port,
+                b_envs,
+            ).await?;
+            launched_names.push("Backend");
 
-                let svc_id = format!("native-{}-{}", svc.name, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
-                let short_id = svc_id.chars().take(12).collect::<String>();
+            // 2. Frontend Service
+            let f_cmd = if f_path.join("package.json").exists() {
+                "npm run dev || npm start".to_string()
+            } else {
+                "npm start".to_string()
+            };
 
-                let mut envs = vec![
-                    ("PORT".to_string(), svc.port.to_string()),
-                    ("NODE_ENV".to_string(), "development".to_string()),
-                ];
+            let f_id = format!("native-frontend-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
+            let f_short_id = f_id.chars().take(12).collect::<String>();
+            let f_envs = vec![
+                ("PORT".to_string(), "3000".to_string()),
+                ("VITE_API_URL".to_string(), format!("http://localhost:{}", b_port)),
+                ("NEXT_PUBLIC_API_URL".to_string(), format!("http://localhost:{}", b_port)),
+                ("NODE_ENV".to_string(), "development".to_string()),
+            ];
 
-                if svc.name == "frontend" {
-                    envs.push(("VITE_API_URL".to_string(), "http://localhost:8080".to_string()));
-                    envs.push(("NEXT_PUBLIC_API_URL".to_string(), "http://localhost:8080".to_string()));
-                }
-
-                runner.spawn_service_process(
-                    svc_id,
-                    short_id,
-                    svc.name.clone(),
-                    svc.role.clone(),
-                    runtime_label,
-                    svc_cmd,
-                    svc_dir,
-                    project_path.to_string(),
-                    svc.port,
-                    envs,
-                ).await?;
-
-                launched_names.push(svc.name.clone());
-            }
+            runner.spawn_service_process(
+                f_id,
+                f_short_id,
+                "frontend".to_string(),
+                "Frontend Web Server (Port 3000)".to_string(),
+                "node (native)".to_string(),
+                f_cmd,
+                f_path,
+                project_path.to_string(),
+                3000,
+                f_envs,
+            ).await?;
+            launched_names.push("Frontend");
 
             Ok(format!(
-                "✓ Launched native myBox sandbox ({}) with zero Docker dependencies!",
+                "✓ Launched native myBox sandboxes ({}) on http://localhost:3000 (Zero Docker required)!",
                 launched_names.join(" & ")
             ))
         } else {
             // Single service project
+            let mut cmd = detected.start_command.clone();
+            if cmd == "mybox up" || cmd.is_empty() {
+                // Fallback to real framework runner command
+                if root.join("package.json").exists() {
+                    cmd = "npm run dev || npm start".to_string();
+                } else if root.join("Cargo.toml").exists() {
+                    cmd = "cargo run".to_string();
+                } else if root.join("go.mod").exists() || root.join("main.go").exists() {
+                    cmd = "go run .".to_string();
+                } else if root.join("manage.py").exists() {
+                    cmd = "python manage.py runserver 0.0.0.0:8000".to_string();
+                } else if root.join("main.py").exists() || root.join("app.py").exists() {
+                    cmd = "python main.py || python app.py".to_string();
+                } else {
+                    cmd = "npm start".to_string();
+                }
+            }
+
+            let port = if detected.default_port > 0 { detected.default_port } else { 3000 };
             let svc_id = format!("native-app-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
             let short_id = svc_id.chars().take(12).collect::<String>();
 
             let envs = vec![
-                ("PORT".to_string(), detected.default_port.to_string()),
+                ("PORT".to_string(), port.to_string()),
                 ("NODE_ENV".to_string(), "development".to_string()),
             ];
 
@@ -150,16 +167,16 @@ impl NativeRunner {
                 detected.name.clone(),
                 detected.category.clone(),
                 detected.runtime_image.clone(),
-                detected.start_command.clone(),
+                cmd,
                 root.to_path_buf(),
                 project_path.to_string(),
-                detected.default_port,
+                port,
                 envs,
             ).await?;
 
             Ok(format!(
                 "✓ Launched '{}' natively on port http://localhost:{} (Zero Docker required)!",
-                detected.name, detected.default_port
+                detected.name, port
             ))
         }
     }
