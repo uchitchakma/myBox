@@ -147,20 +147,31 @@ impl NativeRunner {
             let preferred = if detected.default_port > 0 { detected.default_port } else { 3000 };
             let port = crate::detector::FrameworkDetector::find_available_port(preferred);
 
-            if cmd == "mybox up" || cmd.is_empty() {
+            if cmd == "mybox up" || cmd.is_empty() || cmd.contains("npm start") {
                 // Fallback to real framework runner command
                 if root.join("package.json").exists() {
-                    cmd = format!("npm run dev -- --port {} || npm start", port);
+                    let pkg = std::fs::read_to_string(root.join("package.json")).unwrap_or_default().to_lowercase();
+                    if pkg.contains("\"next\"") || root.join("next.config.js").exists() || root.join("next.config.ts").exists() || root.join("next.config.mjs").exists() {
+                        cmd = format!("npx next dev -p {}", port);
+                    } else if pkg.contains("\"dev\"") {
+                        cmd = format!("npm run dev -- --port {} --host || npm run dev -p {} || npm start", port, port);
+                    } else {
+                        cmd = "npm start".to_string();
+                    }
                 } else if root.join("Cargo.toml").exists() {
                     cmd = "cargo run".to_string();
                 } else if root.join("go.mod").exists() || root.join("main.go").exists() {
                     cmd = "go run .".to_string();
                 } else if root.join("manage.py").exists() {
-                    cmd = format!("python manage.py runserver 0.0.0.0:{}", port);
+                    cmd = format!("python3 manage.py runserver 0.0.0.0:{}", port);
                 } else if root.join("main.py").exists() || root.join("app.py").exists() {
-                    cmd = "python main.py || python app.py".to_string();
+                    cmd = "python3 main.py || python3 app.py".to_string();
+                } else if root.join("index.php").exists() || root.join("wp-config.php").exists() {
+                    cmd = format!("php -S 0.0.0.0:{}", port);
+                } else if root.join("index.html").exists() {
+                    cmd = format!("python3 -m http.server {}", port);
                 } else {
-                    cmd = "npm start".to_string();
+                    cmd = format!("python3 -m http.server {}", port);
                 }
             }
 
@@ -423,8 +434,13 @@ fn get_system_path() -> String {
             let cmd = svc.command.clone();
             let dir = svc.working_dir.clone();
             let project = svc.project_path.clone();
-            let port = svc.port;
-            let envs = svc.env_vars.clone();
+            let port = crate::detector::FrameworkDetector::find_available_port(if svc.port > 0 { svc.port } else { 3000 });
+            let mut envs = svc.env_vars.clone();
+            for (k, v) in envs.iter_mut() {
+                if k == "PORT" {
+                    *v = port.to_string();
+                }
+            }
             drop(services);
 
             self.spawn_service_process(id, short_id, name, role, runtime_label, cmd, dir, project, port, envs).await?;
