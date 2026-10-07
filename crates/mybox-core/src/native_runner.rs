@@ -67,7 +67,7 @@ impl NativeRunner {
             let b_path = root.join(b_dir_name);
 
             // 1. Backend Service
-            let (b_cmd, b_label, b_port) = if b_path.join("Cargo.toml").exists() {
+            let (b_cmd_raw, b_label, b_pref_port) = if b_path.join("Cargo.toml").exists() {
                 ("cargo run".to_string(), "rust (native)".to_string(), 8080)
             } else if b_path.join("go.mod").exists() || b_path.join("main.go").exists() {
                 ("go run . || go run main.go".to_string(), "go (native)".to_string(), 8080)
@@ -76,6 +76,8 @@ impl NativeRunner {
             } else {
                 ("python main.py || python app.py".to_string(), "python (native)".to_string(), 8000)
             };
+
+            let b_port = crate::detector::FrameworkDetector::find_available_port(b_pref_port);
 
             let b_id = format!("native-backend-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
             let b_short_id = b_id.chars().take(12).collect::<String>();
@@ -90,7 +92,7 @@ impl NativeRunner {
                 "backend".to_string(),
                 format!("Backend API Server (Port {})", b_port),
                 b_label,
-                b_cmd,
+                b_cmd_raw,
                 b_path,
                 project_path.to_string(),
                 b_port,
@@ -99,8 +101,9 @@ impl NativeRunner {
             launched_names.push("Backend");
 
             // 2. Frontend Service
+            let f_port = crate::detector::FrameworkDetector::find_available_port(3000);
             let f_cmd = if f_path.join("package.json").exists() {
-                "npm run dev || npm start".to_string()
+                format!("npm run dev -- --port {} || npm start", f_port)
             } else {
                 "npm start".to_string()
             };
@@ -108,9 +111,11 @@ impl NativeRunner {
             let f_id = format!("native-frontend-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
             let f_short_id = f_id.chars().take(12).collect::<String>();
             let f_envs = vec![
-                ("PORT".to_string(), "3000".to_string()),
+                ("PORT".to_string(), f_port.to_string()),
                 ("VITE_API_URL".to_string(), format!("http://localhost:{}", b_port)),
                 ("NEXT_PUBLIC_API_URL".to_string(), format!("http://localhost:{}", b_port)),
+                ("REACT_APP_API_URL".to_string(), format!("http://localhost:{}", b_port)),
+                ("API_URL".to_string(), format!("http://localhost:{}", b_port)),
                 ("NODE_ENV".to_string(), "development".to_string()),
             ];
 
@@ -118,33 +123,36 @@ impl NativeRunner {
                 f_id,
                 f_short_id,
                 "frontend".to_string(),
-                "Frontend Web Server (Port 3000)".to_string(),
+                format!("Frontend Web Server (Port {})", f_port),
                 "node (native)".to_string(),
                 f_cmd,
                 f_path,
                 project_path.to_string(),
-                3000,
+                f_port,
                 f_envs,
             ).await?;
             launched_names.push("Frontend");
 
             Ok(format!(
-                "✓ Launched native myBox sandboxes ({}) on http://localhost:3000 (Zero Docker required)!",
-                launched_names.join(" & ")
+                "✓ Launched native myBox sandboxes ({}) on http://localhost:{} (Zero Docker required)!",
+                launched_names.join(" & "), f_port
             ))
         } else {
             // Single service project
             let mut cmd = detected.start_command.clone();
+            let preferred = if detected.default_port > 0 { detected.default_port } else { 3000 };
+            let port = crate::detector::FrameworkDetector::find_available_port(preferred);
+
             if cmd == "mybox up" || cmd.is_empty() {
                 // Fallback to real framework runner command
                 if root.join("package.json").exists() {
-                    cmd = "npm run dev || npm start".to_string();
+                    cmd = format!("npm run dev -- --port {} || npm start", port);
                 } else if root.join("Cargo.toml").exists() {
                     cmd = "cargo run".to_string();
                 } else if root.join("go.mod").exists() || root.join("main.go").exists() {
                     cmd = "go run .".to_string();
                 } else if root.join("manage.py").exists() {
-                    cmd = "python manage.py runserver 0.0.0.0:8000".to_string();
+                    cmd = format!("python manage.py runserver 0.0.0.0:{}", port);
                 } else if root.join("main.py").exists() || root.join("app.py").exists() {
                     cmd = "python main.py || python app.py".to_string();
                 } else {
@@ -152,7 +160,6 @@ impl NativeRunner {
                 }
             }
 
-            let port = if detected.default_port > 0 { detected.default_port } else { 3000 };
             let svc_id = format!("native-app-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
             let short_id = svc_id.chars().take(12).collect::<String>();
 
