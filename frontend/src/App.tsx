@@ -132,6 +132,15 @@ export function App() {
     }
   };
 
+  const handleRemoveVolume = async (name: string) => {
+    try {
+      await api.removeVolume(name);
+      loadData();
+    } catch (err) {
+      console.error("Failed to remove volume:", err);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100 antialiased overflow-hidden select-none">
       {/* Sidebar */}
@@ -181,7 +190,9 @@ export function App() {
             <ImagesView images={images} onRemove={handleRemoveImage} />
           )}
 
-          {currentTab === "volumes" && <VolumesView volumes={volumes} />}
+          {currentTab === "volumes" && (
+            <VolumesView volumes={volumes} onRemove={handleRemoveVolume} />
+          )}
 
           {currentTab === "stats" && <StatsView metrics={metrics} />}
 

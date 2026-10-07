@@ -7,12 +7,11 @@ import {
   FileText,
   Search,
   Box,
-  Globe,
   ChevronDown,
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
-import { ContainerItem, groupContainers, ContainerGroup, getPrimaryWebUrl } from "../types";
+import { ContainerItem, groupContainers, ContainerGroup } from "../types";
 import { api } from "../api";
 
 interface ContainersViewProps {
@@ -156,7 +155,6 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
             <tbody className="divide-y divide-zinc-800/60">
               {filteredGroups.map((g) => {
                 const isExpanded = expandedGroups[g.key] ?? true;
-                const targetUrl = getPrimaryWebUrl(g);
 
                 if (g.isGroup) {
                   return (
@@ -229,8 +227,8 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                                   title={`Open http://localhost:${pNum} in Browser`}
                                   className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-brand-400 border border-zinc-800 hover:border-brand-500/40 text-[10px] font-mono transition"
                                 >
-                                  <Globe className="w-2.5 h-2.5" />
-                                  <span>{pNum} ↗</span>
+                                  <span>:{pNum}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 opacity-70" />
                                 </button>
                               );
                             })}
@@ -240,19 +238,6 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                         {/* Master Actions (Plays/Stops all services in 1-click) */}
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
-                            {/* Prominent Open Website Button on Stack Row */}
-                            {g.is_running && targetUrl && (
-                              <button
-                                onClick={() => api.openBrowser(targetUrl)}
-                                title={`Open ${targetUrl} in Browser`}
-                                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition transform hover:-translate-y-0.5"
-                              >
-                                <Globe className="w-3.5 h-3.5" />
-                                <span>Open Website</span>
-                                <ExternalLink className="w-3 h-3 opacity-80" />
-                              </button>
-                            )}
-
                             <button
                               onClick={() => onOpenLogs(g.services[0])}
                               title="View Application Logs"
@@ -303,9 +288,6 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                       {/* Sub-Service Rows (Indented) */}
                       {isExpanded &&
                         g.services.map((c) => {
-                          const subPort = c.ports[0];
-                          const subUrl = subPort ? `http://localhost:${subPort.public_port || subPort.private_port}` : null;
-
                           return (
                             <tr
                               key={c.id}
@@ -356,10 +338,10 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                                         key={idx}
                                         onClick={() => api.openBrowser(`http://localhost:${pNum}`)}
                                         title={`Open http://localhost:${pNum} in Browser`}
-                                        className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-brand-400 border border-zinc-800 text-[10px] font-mono transition"
+                                        className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-brand-400 border border-zinc-800 hover:border-brand-500/40 text-[10px] font-mono transition"
                                       >
-                                        <Globe className="w-2.5 h-2.5 text-zinc-500" />
-                                        <span>{pNum} ↗</span>
+                                        <span>:{pNum}</span>
+                                        <ExternalLink className="w-2.5 h-2.5 opacity-70" />
                                       </button>
                                     );
                                   })}
@@ -368,15 +350,6 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
 
                               <td className="px-5 py-2.5 text-right">
                                 <div className="flex items-center justify-end space-x-1">
-                                  {c.is_running && subUrl && (
-                                    <button
-                                      onClick={() => api.openBrowser(subUrl)}
-                                      title={`Open ${subUrl} in Browser`}
-                                      className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-brand-400 hover:text-white transition"
-                                    >
-                                      <ExternalLink className="w-3 h-3" />
-                                    </button>
-                                  )}
                                   <button
                                     onClick={() => onOpenLogs(c)}
                                     title="Service Logs"
@@ -412,8 +385,6 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
 
                 // Standalone Single Container Row
                 const c = g.services[0];
-                const sPort = c.ports[0];
-                const sUrl = sPort ? `http://localhost:${sPort.public_port || sPort.private_port}` : null;
 
                 return (
                   <tr
@@ -470,8 +441,8 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                                 title={`Open http://localhost:${pNum} in Browser`}
                                 className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-brand-400 border border-zinc-800 text-[10px] font-mono transition"
                               >
-                                <Globe className="w-2.5 h-2.5 text-zinc-500" />
-                                <span>{pNum} ↗</span>
+                                <span>:{pNum}</span>
+                                <ExternalLink className="w-2.5 h-2.5 opacity-70" />
                               </button>
                             );
                           })}
@@ -481,18 +452,6 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
 
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end space-x-1.5">
-                        {c.is_running && sUrl && (
-                          <button
-                            onClick={() => api.openBrowser(sUrl)}
-                            title={`Open ${sUrl} in Browser`}
-                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md transition"
-                          >
-                            <Globe className="w-3.5 h-3.5" />
-                            <span>Open</span>
-                            <ExternalLink className="w-3 h-3 opacity-80" />
-                          </button>
-                        )}
-
                         <button
                           onClick={() => onOpenLogs(c)}
                           title="View Logs"

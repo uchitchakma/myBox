@@ -63,11 +63,11 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-3">
-        {/* Runtime Status Badge / 1-Click Engine Starter */}
+        {/* Runtime Status Badge */}
         {isConnected ? (
           <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{metrics?.engine_status.engine_type || "Connected"}</span>
+            <span>{metrics?.engine_status.engine_type || "Engine Ready"}</span>
           </div>
         ) : (
           <button
@@ -79,11 +79,11 @@ export const Header: React.FC<HeaderProps> = ({
                 console.error(e);
               }
             }}
-            title="Click to start the native myBox hypervisor engine"
+            title="Click to start the engine"
             className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 transition cursor-pointer shadow-sm animate-pulse"
           >
             <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Start Native myBox Engine</span>
+            <span>Start Engine</span>
           </button>
         )}
 

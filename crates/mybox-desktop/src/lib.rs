@@ -98,6 +98,12 @@ async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<VolumeItem>, Str
 }
 
 #[tauri::command]
+async fn remove_volume(name: String, state: State<'_, AppState>) -> Result<(), String> {
+    let docker = state.docker.read().await;
+    docker.remove_volume(&name).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn get_container_logs(
     id: String,
     tail: usize,
@@ -250,6 +256,7 @@ pub fn run() {
             list_images,
             remove_image,
             list_volumes,
+            remove_volume,
             get_container_logs,
             prune_system,
             get_app_info,

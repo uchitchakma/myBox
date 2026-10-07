@@ -50,10 +50,10 @@ export const ImagesView: React.FC<ImagesViewProps> = ({ images, onRemove }) => {
               <Layers className="w-6 h-6" />
             </div>
             <p className="text-sm font-semibold text-zinc-200">
-              No container images cached
+              No container images found
             </p>
             <p className="text-xs text-zinc-400 mt-1.5 max-w-md">
-              In <strong className="text-brand-400 font-medium">Native Mode (Zero Docker)</strong>, projects execute directly in isolated native sandboxes with zero image disk bloat. OCI & Docker images will appear here if pulled or built.
+              Runtime images and cached container layers will appear here.
             </p>
           </div>
         ) : (

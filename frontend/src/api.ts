@@ -281,6 +281,7 @@ export const api = {
   removeImage: (id: string, force = false) =>
     callTauri<void>("remove_image", { id, force }),
   listVolumes: () => callTauri<VolumeItem[]>("list_volumes"),
+  removeVolume: (name: string) => callTauri<void>("remove_volume", { name }),
   getContainerLogs: (id: string, tail = 100) =>
     callTauri<ContainerLogs>("get_container_logs", { id, tail }),
   pruneSystem: () => callTauri<PruneResult>("prune_system"),

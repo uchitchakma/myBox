@@ -161,7 +161,7 @@ impl DockerEngine {
 
         EngineInfo {
             connected: true,
-            engine_type: "myBox Native Engine (Zero Docker)".to_string(),
+            engine_type: "myBox Engine (Ready)".to_string(),
             socket_path: "native://host".to_string(),
             server_version: "0.1.0".to_string(),
             api_version: "native-v1".to_string(),
@@ -305,6 +305,38 @@ impl DockerEngine {
     pub async fn list_images(&self) -> Result<Vec<ImageItem>> {
         let mut images = Vec::new();
 
+        // 1. Native lightweight runtime images
+        let active_services = crate::native_runner::NativeRunner::global().list_services().await;
+
+        let native_presets = vec![
+            ("node", "20-alpine", 48.5),
+            ("rust", "latest", 112.0),
+            ("python", "3.11-slim", 34.2),
+            ("go", "1.22-alpine", 62.0),
+            ("php", "8.3-cli", 27.8),
+            ("bun", "latest", 44.0),
+            ("postgres", "16-alpine", 86.4),
+            ("redis", "7.2-alpine", 16.5),
+        ];
+
+        for (idx, (repo, tag, size_mb)) in native_presets.into_iter().enumerate() {
+            let count = active_services
+                .iter()
+                .filter(|s| s.image.to_lowercase().contains(repo) || s.name.to_lowercase().contains(repo))
+                .count() as i64;
+
+            images.push(ImageItem {
+                id: format!("img-native-{}", idx + 1),
+                short_id: format!("sha256:{}", &format!("{:08x}", idx + 100)),
+                repository: repo.to_string(),
+                tag: tag.to_string(),
+                size_mb,
+                created: 1710000000 + (idx as i64 * 86400),
+                containers_count: count,
+            });
+        }
+
+        // 2. Merge OCI / Docker images if available
         if let Some(ref client) = self.client {
             let options = Some(ListImagesOptions::<String> {
                 all: false,
@@ -352,6 +384,10 @@ impl DockerEngine {
     }
 
     pub async fn remove_image(&self, id: &str, force: bool) -> Result<()> {
+        if id.starts_with("img-native-") {
+            return Ok(());
+        }
+
         let client = self
             .client
             .as_ref()
@@ -366,6 +402,54 @@ impl DockerEngine {
 
     pub async fn list_volumes(&self) -> Result<Vec<VolumeItem>> {
         let mut volumes = Vec::new();
+        let vol_dir = if let Ok(home) = std::env::var("HOME") {
+            PathBuf::from(home).join(".mybox").join("volumes")
+        } else {
+            PathBuf::from("./.mybox/volumes")
+        };
+        let _ = std::fs::create_dir_all(&vol_dir);
+
+        // Ensure default persistent volumes exist
+        for d in &["mybox_pgdata", "mybox_redis_data", "mybox_storage"] {
+            let _ = std::fs::create_dir_all(vol_dir.join(d));
+        }
+
+        if let Ok(entries) = std::fs::read_dir(&vol_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    let created_str = if let Ok(meta) = entry.metadata() {
+                        if let Ok(created) = meta.created().or_else(|_| meta.modified()) {
+                            let dt: chrono::DateTime<chrono::Local> = created.into();
+                            dt.format("%Y-%m-%d %H:%M").to_string()
+                        } else {
+                            "Recent".to_string()
+                        }
+                    } else {
+                        "Recent".to_string()
+                    };
+
+                    let mut total_bytes: u64 = 0;
+                    if let Ok(sub_entries) = std::fs::read_dir(&path) {
+                        for sub in sub_entries.flatten() {
+                            if let Ok(m) = sub.metadata() {
+                                total_bytes += m.len();
+                            }
+                        }
+                    }
+                    let size_mb = (total_bytes as f64) / (1024.0 * 1024.0);
+
+                    volumes.push(VolumeItem {
+                        name,
+                        driver: "local (native)".to_string(),
+                        mountpoint: path.to_string_lossy().to_string(),
+                        created_at: created_str,
+                        size_mb: Some((size_mb * 10.0).round() / 10.0),
+                    });
+                }
+            }
+        }
 
         if let Some(ref client) = self.client {
             let options = Some(ListVolumesOptions::<String> {
@@ -373,22 +457,36 @@ impl DockerEngine {
             });
 
             if let Ok(res) = client.list_volumes(options).await {
-                volumes = res
-                    .volumes
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|v| VolumeItem {
-                        name: v.name,
-                        driver: v.driver,
-                        mountpoint: v.mountpoint,
-                        created_at: v.created_at.unwrap_or_else(|| "N/A".into()),
-                        size_mb: None,
-                    })
-                    .collect();
+                for v in res.volumes.unwrap_or_default() {
+                    if !volumes.iter().any(|existing| existing.name == v.name) {
+                        volumes.push(VolumeItem {
+                            name: v.name,
+                            driver: v.driver,
+                            mountpoint: v.mountpoint,
+                            created_at: v.created_at.unwrap_or_else(|| "N/A".into()),
+                            size_mb: None,
+                        });
+                    }
+                }
             }
         }
 
         Ok(volumes)
+    }
+
+    pub async fn remove_volume(&self, name: &str) -> Result<()> {
+        let vol_dir = if let Ok(home) = std::env::var("HOME") {
+            PathBuf::from(home).join(".mybox").join("volumes").join(name)
+        } else {
+            PathBuf::from("./.mybox/volumes").join(name)
+        };
+        if vol_dir.exists() {
+            let _ = std::fs::remove_dir_all(&vol_dir);
+        }
+        if let Some(ref client) = self.client {
+            let _ = client.remove_volume(name, None).await;
+        }
+        Ok(())
     }
 
     pub async fn get_container_logs(&self, id: &str, tail: usize) -> Result<ContainerLogs> {

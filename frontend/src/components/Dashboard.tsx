@@ -9,10 +9,9 @@ import {
   FileText,
   Terminal,
   Rocket,
-  Globe,
   ExternalLink,
 } from "lucide-react";
-import { ContainerItem, SystemMetrics, groupContainers, getPrimaryWebUrl } from "../types";
+import { ContainerItem, SystemMetrics, groupContainers } from "../types";
 import { api } from "../api";
 
 interface DashboardProps {
@@ -125,7 +124,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-xs text-zinc-400">images • {totalVolumes} volumes</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400">
-            <span>Zero-bloat caching</span>
+            <span>Managed Volumes</span>
             <button
               onClick={() => onNavigateTab("images")}
               className="text-brand-400 hover:text-brand-300 font-semibold"
@@ -190,8 +189,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   });
                 };
 
-                const targetUrl = getPrimaryWebUrl(g);
-
                 return (
                   <div
                     key={g.key}
@@ -243,19 +240,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span className="text-[11px] text-zinc-400 mr-2 hidden md:inline">
                         {g.status}
                       </span>
-
-                      {/* Prominent Open Website Button */}
-                      {isRunning && targetUrl && (
-                        <button
-                          onClick={() => api.openBrowser(targetUrl)}
-                          title={`Open ${targetUrl} in Browser`}
-                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition transform hover:-translate-y-0.5"
-                        >
-                          <Globe className="w-3.5 h-3.5" />
-                          <span>Open Website</span>
-                          <ExternalLink className="w-3 h-3 opacity-80" />
-                        </button>
-                      )}
 
                       <button
                         onClick={() => onOpenLogs(primaryService)}
