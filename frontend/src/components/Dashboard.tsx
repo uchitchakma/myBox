@@ -8,6 +8,7 @@ import {
   Square,
   FileText,
   Terminal,
+  Rocket,
 } from "lucide-react";
 import { ContainerItem, SystemMetrics } from "../types";
 
@@ -18,6 +19,7 @@ interface DashboardProps {
   onStop: (id: string) => void;
   onOpenLogs: (container: ContainerItem) => void;
   onNavigateTab: (tab: string) => void;
+  onOpenLaunchModal: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -27,6 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onStop,
   onOpenLogs,
   onNavigateTab,
+  onOpenLaunchModal,
 }) => {
   const cpuPercent = metrics?.cpu_usage_percent ?? 0;
   const ramPercent = metrics?.memory_usage_percent ?? 0;
@@ -150,12 +153,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {containers.length === 0 ? (
-            <div className="p-8 text-center border border-dashed border-zinc-800 rounded-xl">
-              <Box className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-              <p className="text-sm text-zinc-400">No containers found</p>
-              <p className="text-xs text-zinc-500 mt-1">
-                Run containers via CLI or Docker Compose
+            <div className="p-8 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
+              <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center justify-center mx-auto mb-3 shadow-md shadow-brand-500/10">
+                <Rocket className="w-6 h-6 text-brand-400" />
+              </div>
+              <p className="text-sm font-bold text-white">No containers running</p>
+              <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+                Containerize and run any project folder with 1-click presets or standard mybox.yml.
               </p>
+              <button
+                onClick={onOpenLaunchModal}
+                className="mt-4 inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-lg shadow-brand-500/30 transition transform hover:-translate-y-0.5"
+              >
+                <Rocket className="w-4 h-4" />
+                <span>Launch & Containerize Project</span>
+              </button>
             </div>
           ) : (
             <div className="space-y-2">

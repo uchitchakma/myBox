@@ -9,18 +9,21 @@ import {
   Info,
   ExternalLink,
   Sparkles,
+  Rocket,
 } from "lucide-react";
 
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
   onOpenAbout: () => void;
+  onOpenLaunchModal: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   setCurrentTab,
   onOpenAbout,
+  onOpenLaunchModal,
 }) => {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -56,8 +59,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
+        {/* Quick Launch CTA Button */}
+        <div className="p-3 pb-1">
+          <button
+            onClick={onOpenLaunchModal}
+            className="w-full flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-lg shadow-brand-500/25 transition transform hover:-translate-y-0.5"
+          >
+            <Rocket className="w-4 h-4" />
+            <span>Launch Project</span>
+          </button>
+        </div>
+
         {/* Navigation Links */}
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 pt-1 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;

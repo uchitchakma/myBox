@@ -139,6 +139,7 @@ export function App() {
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onOpenAbout={() => setIsAboutOpen(true)}
+        onOpenLaunchModal={() => setIsLaunchModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -161,6 +162,7 @@ export function App() {
               onStop={handleStopContainer}
               onOpenLogs={handleOpenLogs}
               onNavigateTab={setCurrentTab}
+              onOpenLaunchModal={() => setIsLaunchModalOpen(true)}
             />
           )}
 
