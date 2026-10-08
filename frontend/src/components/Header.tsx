@@ -58,12 +58,12 @@ export const Header: React.FC<HeaderProps> = ({
   const isConnected = metrics?.engine_status.connected ?? false;
 
   return (
-    <header className="h-16 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/60 backdrop-blur px-6 flex items-center justify-between select-none transition-colors duration-200">
-      <div>
-        <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
+    <header data-tauri-drag-region className="h-16 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/60 backdrop-blur px-6 flex items-center justify-between select-none transition-colors duration-200">
+      <div data-tauri-drag-region>
+        <h1 data-tauri-drag-region className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
           {current.title}
         </h1>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">{current.desc}</p>
+        <p data-tauri-drag-region className="text-xs text-zinc-500 dark:text-zinc-400">{current.desc}</p>
       </div>
 
       <div className="flex items-center space-x-2.5">

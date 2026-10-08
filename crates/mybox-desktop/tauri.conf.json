@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "myBox - Lightweight Container Desktop",
+        "title": "myBox",
         "width": 1180,
         "height": 780,
         "minWidth": 900,
@@ -22,7 +22,8 @@
         "center": true,
         "decorations": true,
         "transparent": false,
-        "theme": "Dark"
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {
