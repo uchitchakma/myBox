@@ -23,6 +23,10 @@ import {
 
 export function App() {
   const [currentTab, setCurrentTab] = useState("dashboard");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    const saved = localStorage.getItem("mybox_theme");
+    return saved === "light" ? "light" : "dark";
+  });
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [containers, setContainers] = useState<ContainerItem[]>([]);
   const [images, setImages] = useState<ImageItem[]>([]);
@@ -30,6 +34,20 @@ export function App() {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Sync theme with document class and localStorage
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("mybox_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   // Modals
   const [selectedLogsContainer, setSelectedLogsContainer] =
@@ -142,7 +160,7 @@ export function App() {
   };
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 antialiased overflow-hidden select-none">
+    <div className="flex h-screen bg-slate-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 antialiased overflow-hidden select-none transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -152,7 +170,7 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-zinc-900/30">
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-zinc-900/30">
         <Header
           currentTab={currentTab}
           metrics={metrics}
@@ -160,6 +178,8 @@ export function App() {
           onPrune={handlePrune}
           onOpenLaunchModal={() => setIsLaunchModalOpen(true)}
           isRefreshing={isRefreshing}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
         <div className="flex-1 overflow-hidden">
@@ -199,6 +219,8 @@ export function App() {
           {currentTab === "settings" && (
             <SettingsView
               config={appConfig}
+              theme={theme}
+              onToggleTheme={toggleTheme}
               onSaveConfig={(cfg) => {
                 setAppConfig(cfg);
                 api.saveAppConfig(cfg);

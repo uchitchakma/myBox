@@ -229,24 +229,24 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     detectedProject?.detected_files.some(f => f.includes("mybox"));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 select-none">
-      <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150 select-none">
+      <div className="w-full max-w-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-5 bg-gradient-to-br from-zinc-900 to-zinc-950 border-b border-zinc-800 flex items-center justify-between">
+        <div className="p-5 bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-2xl bg-brand-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
               <Rocket className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="text-base font-bold text-white tracking-tight">
+                <h2 className="text-base font-bold text-zinc-900 dark:text-white tracking-tight">
                   Launch & Containerize Project
                 </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-600 dark:text-brand-400 border border-brand-500/30">
                   Auto-Detect Engine
                 </span>
               </div>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Supports Next.js, Django, FastAPI, React, Laravel, Rust, Go, Flutter, .NET, Spring & more
               </p>
             </div>
@@ -254,24 +254,24 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition"
+            className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center space-x-1 px-6 pt-3 border-b border-zinc-800/60 bg-zinc-950 text-xs">
+        <div className="flex items-center space-x-1 px-6 pt-3 border-b border-zinc-200 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950 text-xs">
           <button
             type="button"
             onClick={() => setActiveView("auto")}
             className={`px-3.5 py-2 font-semibold border-b-2 transition flex items-center space-x-1.5 ${
               activeView === "auto"
-                ? "border-brand-500 text-white"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                ? "border-brand-500 text-brand-600 dark:text-white"
+                : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+            <Sparkles className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
             <span>Auto-Detected Stack</span>
           </button>
 
@@ -280,8 +280,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             onClick={() => setActiveView("presets")}
             className={`px-3.5 py-2 font-semibold border-b-2 transition flex items-center space-x-1.5 ${
               activeView === "presets"
-                ? "border-brand-500 text-white"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                ? "border-brand-500 text-brand-600 dark:text-white"
+                : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -293,8 +293,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             onClick={() => setActiveView("yaml")}
             className={`px-3.5 py-2 font-semibold border-b-2 transition flex items-center space-x-1.5 ${
               activeView === "yaml"
-                ? "border-brand-500 text-white"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                ? "border-brand-500 text-brand-600 dark:text-white"
+                : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
             }`}
           >
             <FileCode2 className="w-3.5 h-3.5" />
@@ -303,11 +303,11 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleLaunch} className="p-6 space-y-5 text-xs text-zinc-300 overflow-y-auto flex-1">
+        <form onSubmit={handleLaunch} className="p-6 space-y-5 text-xs text-zinc-700 dark:text-zinc-300 overflow-y-auto flex-1">
           {/* Folder Path Field */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="block font-semibold text-zinc-200">
+              <label className="block font-semibold text-zinc-800 dark:text-zinc-200">
                 Project Folder Path
               </label>
               <div className="flex items-center space-x-2">
@@ -316,15 +316,15 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowResetConfirm(true)}
-                      className="flex items-center space-x-1 text-zinc-400 hover:text-zinc-200 text-[11px] transition"
+                      className="flex items-center space-x-1 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 text-[11px] transition"
                     >
-                      <RefreshCw className={`w-3 h-3 ${isDetecting ? "animate-spin text-brand-400" : ""}`} />
+                      <RefreshCw className={`w-3 h-3 ${isDetecting ? "animate-spin text-brand-500 dark:text-brand-400" : ""}`} />
                       <span>Re-Scan</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowUnboxConfirm(true)}
-                      className="flex items-center space-x-1 text-red-400 hover:text-red-300 text-[11px] transition"
+                      className="flex items-center space-x-1 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 text-[11px] transition"
                     >
                       <Trash2 className="w-3 h-3" />
                       <span>Unbox Project</span>
@@ -335,7 +335,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   type="button"
                   onClick={handleBrowseFolder}
                   disabled={isBrowsing}
-                  className="flex items-center space-x-1 text-brand-400 hover:text-brand-300 text-[11px] font-medium transition cursor-pointer"
+                  className="flex items-center space-x-1 text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 text-[11px] font-medium transition cursor-pointer"
                 >
                   <FolderOpen className="w-3.5 h-3.5" />
                   <span>{isBrowsing ? "Opening Finder..." : "Browse Finder..."}</span>
@@ -343,21 +343,21 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </div>
             </div>
             <div className="relative flex items-center">
-              <Folder className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Folder className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 placeholder="/Users/uchitchakma/Projects/my-app"
-                className="w-full pl-9 pr-28 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition font-mono"
+                className="w-full pl-9 pr-28 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition font-mono"
               />
               <button
                 type="button"
                 onClick={handleBrowseFolder}
                 disabled={isBrowsing}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700/60 text-[11px] font-medium transition flex items-center space-x-1.5 shadow-sm"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white border border-zinc-300 dark:border-zinc-700/60 text-[11px] font-medium transition flex items-center space-x-1.5 shadow-sm"
               >
-                <FolderOpen className="w-3.5 h-3.5 text-brand-400" />
+                <FolderOpen className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
                 <span>Select</span>
               </button>
             </div>
@@ -367,9 +367,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           {activeView === "auto" && (
             <div className="space-y-3">
               {isDetecting ? (
-                <div className="p-6 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 flex flex-col items-center justify-center space-y-2 text-center animate-pulse">
-                  <RefreshCw className="w-5 h-5 text-brand-400 animate-spin" />
-                  <p className="text-xs font-semibold text-zinc-200">
+                <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 flex flex-col items-center justify-center space-y-2 text-center animate-pulse">
+                  <RefreshCw className="w-5 h-5 text-brand-500 dark:text-brand-400 animate-spin" />
+                  <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                     Scanning project structure & package manifests...
                   </p>
                   <p className="text-[11px] text-zinc-500">
@@ -377,22 +377,22 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   </p>
                 </div>
               ) : detectedProject ? (
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-brand-500/10 via-zinc-900/60 to-zinc-900/40 border border-brand-500/30 shadow-lg space-y-3">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-brand-500/5 via-zinc-50 to-white dark:from-brand-500/10 dark:via-zinc-900/60 dark:to-zinc-900/40 border border-brand-500/30 shadow-lg space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-sm border border-brand-500/30">
+                      <div className="w-8 h-8 rounded-xl bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-sm border border-brand-500/30">
                         ⚡
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h3 className="text-sm font-bold text-white">
+                          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
                             {detectedProject.name}
                           </h3>
                           <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-500 text-white font-bold">
                             Auto-Detected
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-400">
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                           {detectedProject.description}
                         </p>
                       </div>
@@ -402,7 +402,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowUnboxConfirm(true)}
-                        className="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-[11px] font-semibold flex items-center space-x-1 transition"
+                        className="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-600 dark:text-red-400 border border-red-500/30 text-[11px] font-semibold flex items-center space-x-1 transition"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>De-containerize</span>
@@ -411,35 +411,35 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   </div>
 
                   {/* Detected Details Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-zinc-800/60 text-[11px]">
-                    <div className="p-2 rounded-xl bg-zinc-900/70 border border-zinc-800/60">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800/60 text-[11px]">
+                    <div className="p-2 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/60">
                       <span className="text-zinc-500 block text-[10px]">Category</span>
-                      <span className="font-semibold text-zinc-200">{detectedProject.category}</span>
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">{detectedProject.category}</span>
                     </div>
-                    <div className="p-2 rounded-xl bg-zinc-900/70 border border-zinc-800/60">
+                    <div className="p-2 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/60">
                       <span className="text-zinc-500 block text-[10px]">Container Image</span>
-                      <span className="font-mono text-zinc-200 truncate block">{detectedProject.runtime_image}</span>
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200 truncate block">{detectedProject.runtime_image}</span>
                     </div>
-                    <div className="p-2 rounded-xl bg-zinc-900/70 border border-zinc-800/60">
+                    <div className="p-2 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/60">
                       <span className="text-zinc-500 block text-[10px]">Start Command</span>
-                      <span className="font-mono text-brand-300 truncate block">{detectedProject.start_command}</span>
+                      <span className="font-mono text-brand-600 dark:text-brand-300 truncate block">{detectedProject.start_command}</span>
                     </div>
                   </div>
 
                   {/* Services breakdown if multi-service */}
                   {detectedProject.services && detectedProject.services.length > 0 && (
                     <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">
                         Orchestrated Services ({detectedProject.services.length})
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {detectedProject.services.map((svc) => (
-                          <div key={svc.name} className="p-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between">
+                          <div key={svc.name} className="p-2.5 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                             <div>
-                              <span className="font-bold text-zinc-200 block">{svc.name}</span>
+                              <span className="font-bold text-zinc-800 dark:text-zinc-200 block">{svc.name}</span>
                               <span className="text-[10px] text-zinc-500">{svc.role}</span>
                             </div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
                               Port {svc.port}
                             </span>
                           </div>
@@ -449,9 +449,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   )}
                 </div>
               ) : (
-                <div className="p-5 rounded-2xl bg-zinc-900/40 border border-dashed border-zinc-800 text-center space-y-1.5">
-                  <Sparkles className="w-5 h-5 text-zinc-500 mx-auto" />
-                  <p className="text-xs font-semibold text-zinc-300">
+                <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-dashed border-zinc-300 dark:border-zinc-800 text-center space-y-1.5">
+                  <Sparkles className="w-5 h-5 text-zinc-400 dark:text-zinc-500 mx-auto" />
+                  <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                     Select a project directory above
                   </p>
                   <p className="text-[11px] text-zinc-500">
@@ -465,7 +465,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           {/* View 2: Manual Presets */}
           {activeView === "presets" && (
             <div className="space-y-2">
-              <label className="block font-semibold text-zinc-200">
+              <label className="block font-semibold text-zinc-800 dark:text-zinc-200">
                 Choose Manual Preset
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -482,13 +482,13 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                       }}
                       className={`p-3 rounded-2xl text-left border transition flex flex-col justify-between ${
                         isSelected
-                          ? "bg-brand-500/10 border-brand-500 text-white shadow-sm shadow-brand-500/20"
-                          : "bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 text-zinc-300"
+                          ? "bg-brand-500/10 border-brand-500 text-zinc-900 dark:text-white shadow-sm shadow-brand-500/20"
+                          : "bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900/60 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center space-x-2">
-                          <Icon className={`w-4 h-4 ${isSelected ? "text-brand-400" : "text-zinc-400"}`} />
+                          <Icon className={`w-4 h-4 ${isSelected ? "text-brand-500 dark:text-brand-400" : "text-zinc-500 dark:text-zinc-400"}`} />
                           <span className="font-bold text-xs">{preset.title}</span>
                         </div>
                         {preset.badge && (
@@ -497,7 +497,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-zinc-400 leading-tight">
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
                         {preset.desc}
                       </p>
                     </button>
@@ -511,7 +511,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           {activeView === "yaml" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block font-semibold text-zinc-200">
+                <label className="block font-semibold text-zinc-800 dark:text-zinc-200">
                   mybox.yaml Configuration Editor
                 </label>
                 <span className="text-[10px] text-zinc-500">
@@ -523,7 +523,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 value={yamlContent}
                 onChange={(e) => setYamlContent(e.target.value)}
                 placeholder="# Generated mybox.yaml configuration"
-                className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs text-zinc-100 font-mono focus:outline-none focus:border-brand-500 leading-relaxed resize-y"
+                className="w-full p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-2xl text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-brand-500 leading-relaxed resize-y"
               />
             </div>
           )}
@@ -531,18 +531,18 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           {/* Port Config */}
           <div className="flex items-center space-x-4 pt-1">
             <div className="space-y-1.5">
-              <label className="block font-semibold text-zinc-200">
+              <label className="block font-semibold text-zinc-800 dark:text-zinc-200">
                 Host Listening Port
               </label>
               <input
                 type="number"
                 value={port}
                 onChange={(e) => setPort(parseInt(e.target.value) || 3000)}
-                className="w-32 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 focus:outline-none focus:border-brand-500 font-mono transition"
+                className="w-32 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-brand-500 font-mono transition"
               />
             </div>
             <div className="pt-5 text-[11px] text-zinc-500">
-              Access your container at <code className="text-brand-400">http://localhost:{port}</code>
+              Access your container at <code className="text-brand-600 dark:text-brand-400">http://localhost:{port}</code>
             </div>
           </div>
 
@@ -551,15 +551,15 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             <div
               className={`p-3 rounded-xl flex items-center justify-between text-xs font-medium border ${
                 isError
-                  ? "bg-red-500/10 text-red-400 border-red-500/20"
-                  : "bg-brand-500/10 text-brand-300 border-brand-500/20"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                  : "bg-brand-500/10 text-brand-600 dark:text-brand-300 border-brand-500/20"
               }`}
             >
               <div className="flex items-center space-x-2 truncate mr-2">
                 {isError ? (
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-brand-400 animate-pulse" />
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-brand-500 dark:text-brand-400 animate-pulse" />
                 )}
                 <span className="truncate">{statusMessage}</span>
               </div>
@@ -591,8 +591,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
           {/* Reset Confirmation Overlay */}
           {showResetConfirm && (
-            <div className="p-3.5 rounded-2xl bg-zinc-900 border border-amber-500/30 flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2 text-amber-400">
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-zinc-900 border border-amber-500/30 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-400">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>Re-scan directory and reset all customizations?</span>
               </div>
@@ -600,14 +600,14 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowResetConfirm(false)}
-                  className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+                  className="px-2.5 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleResetDetection}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 font-semibold"
+                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 font-semibold"
                 >
                   Confirm Reset
                 </button>
@@ -617,8 +617,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
           {/* Unbox / De-containerize Confirmation Overlay */}
           {showUnboxConfirm && (
-            <div className="p-3.5 rounded-2xl bg-zinc-900 border border-red-500/30 flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2 text-red-400">
+            <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-zinc-900 border border-red-500/30 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
                 <Trash2 className="w-4 h-4 shrink-0" />
                 <span>Stop all containers and delete mybox.yaml?</span>
               </div>
@@ -626,7 +626,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowUnboxConfirm(false)}
-                  className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+                  className="px-2.5 py-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white"
                 >
                   Cancel
                 </button>
@@ -634,7 +634,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   type="button"
                   onClick={handleUnbox}
                   disabled={isUnboxing}
-                  className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 font-semibold"
+                  className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/40 hover:bg-red-500/30 font-semibold"
                 >
                   {isUnboxing ? "Unboxing..." : "Confirm Unbox"}
                 </button>
@@ -643,12 +643,12 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           )}
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80">
+          <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800/80">
             <a
               href="https://github.com/uchitchakma/myBox/blob/main/docs/HOW_IT_WORKS.md"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center space-x-1 text-[11px] text-zinc-500 hover:text-brand-400 transition"
+              className="flex items-center space-x-1 text-[11px] text-zinc-500 hover:text-brand-500 dark:hover:text-brand-400 transition"
             >
               <ExternalLink className="w-3 h-3" />
               <span>Framework Support Docs</span>
@@ -658,7 +658,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium transition"
+                className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition"
               >
                 Cancel
               </button>

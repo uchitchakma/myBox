@@ -9,13 +9,13 @@ interface AboutModalProps {
 
 export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden transition-colors duration-200">
         {/* Header Background */}
-        <div className="p-6 bg-gradient-to-br from-zinc-900 to-zinc-950 border-b border-zinc-800/80 relative">
+        <div className="p-6 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80 relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition"
+            className="absolute top-4 right-4 p-2 rounded-xl bg-white dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-transparent transition shadow-sm"
           >
             <X className="w-4 h-4" />
           </button>
@@ -26,14 +26,14 @@ export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="text-xl font-extrabold text-white tracking-tight">
+                <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
                   my<span className="text-brand-500">Box</span>
                 </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
                   v0.1.0
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 Ultra-Lightweight Container Desktop & CLI
               </p>
             </div>
@@ -41,19 +41,19 @@ export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-5 text-xs text-zinc-300">
-          <p className="leading-relaxed text-zinc-400">
-            myBox is a blazing-fast, modern, open-source container desktop app and headless CLI built with <strong className="text-zinc-200">Tauri</strong> and <strong className="text-zinc-200">Rust</strong>. Designed to deliver container management with zero background memory bloat.
+        <div className="p-6 space-y-5 text-xs text-zinc-700 dark:text-zinc-300">
+          <p className="leading-relaxed text-zinc-600 dark:text-zinc-400">
+            myBox is a blazing-fast, modern, open-source container desktop app and headless CLI built with <strong className="text-zinc-900 dark:text-zinc-200">Tauri</strong> and <strong className="text-zinc-900 dark:text-zinc-200">Rust</strong>. Designed to deliver container management with zero background memory bloat.
           </p>
 
-          <div className="space-y-2.5 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80">
+          <div className="space-y-2.5 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80">
             <div className="flex justify-between items-center">
-              <span className="text-zinc-400">Company</span>
+              <span className="text-zinc-500 dark:text-zinc-400">Company</span>
               <a
                 href={appInfo?.company_website || "https://ucdreams.com"}
                 target="_blank"
                 rel="noreferrer"
-                className="text-brand-400 hover:text-brand-300 font-bold flex items-center space-x-1"
+                className="text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 font-bold flex items-center space-x-1"
               >
                 <span>{appInfo?.company || "UCDREAMS TECHNOLOGIES LLP"}</span>
                 <ExternalLink className="w-3 h-3" />
@@ -61,12 +61,12 @@ export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-zinc-400">Lead Developer</span>
+              <span className="text-zinc-500 dark:text-zinc-400">Lead Developer</span>
               <a
                 href={appInfo?.developer_website || "https://uchitchakma.com"}
                 target="_blank"
                 rel="noreferrer"
-                className="text-zinc-200 hover:text-white font-semibold flex items-center space-x-1"
+                className="text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white font-semibold flex items-center space-x-1"
               >
                 <span>{appInfo?.developer || "Uchit Chakma"}</span>
                 <ExternalLink className="w-3 h-3" />
@@ -74,16 +74,16 @@ export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-zinc-400">Brand Color</span>
+              <span className="text-zinc-500 dark:text-zinc-400">Brand Color</span>
               <div className="flex items-center space-x-1.5">
                 <span className="w-3 h-3 rounded-full bg-brand-500" />
-                <span className="font-mono text-zinc-300">#C5453E</span>
+                <span className="font-mono text-zinc-700 dark:text-zinc-300">#C5453E</span>
               </div>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-zinc-400">Open Source License</span>
-              <span className="text-zinc-300 font-semibold">MIT License</span>
+              <span className="text-zinc-500 dark:text-zinc-400">Open Source License</span>
+              <span className="text-zinc-800 dark:text-zinc-300 font-semibold">MIT License</span>
             </div>
           </div>
 
@@ -93,7 +93,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
               href="https://github.com/uchitchakma/myBox"
               target="_blank"
               rel="noreferrer"
-              className="flex-1 mr-2 flex items-center justify-center space-x-2 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-medium border border-zinc-800 transition"
+              className="flex-1 mr-2 flex items-center justify-center space-x-2 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-white font-medium border border-zinc-300 dark:border-zinc-800 transition shadow-sm"
             >
               <Github className="w-4 h-4" />
               <span>GitHub Repo</span>

@@ -1,5 +1,5 @@
 import React from "react";
-import { RefreshCw, Trash2, Github, CheckCircle2, AlertCircle, Rocket } from "lucide-react";
+import { RefreshCw, Trash2, Github, CheckCircle2, AlertCircle, Rocket, Sun, Moon } from "lucide-react";
 import { SystemMetrics } from "../types";
 
 interface HeaderProps {
@@ -9,6 +9,8 @@ interface HeaderProps {
   onPrune: () => void;
   onOpenLaunchModal: () => void;
   isRefreshing: boolean;
+  theme?: "dark" | "light";
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +20,8 @@ export const Header: React.FC<HeaderProps> = ({
   onPrune,
   onOpenLaunchModal,
   isRefreshing,
+  theme = "dark",
+  onToggleTheme,
 }) => {
   const titles: Record<string, { title: string; desc: string }> = {
     dashboard: {
@@ -54,19 +58,19 @@ export const Header: React.FC<HeaderProps> = ({
   const isConnected = metrics?.engine_status.connected ?? false;
 
   return (
-    <header className="h-16 border-b border-zinc-800/80 bg-zinc-950/60 backdrop-blur px-6 flex items-center justify-between select-none">
+    <header className="h-16 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/60 backdrop-blur px-6 flex items-center justify-between select-none transition-colors duration-200">
       <div>
-        <h1 className="text-lg font-bold text-white tracking-tight">
+        <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
           {current.title}
         </h1>
-        <p className="text-xs text-zinc-400">{current.desc}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">{current.desc}</p>
       </div>
 
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2.5">
         {/* Runtime Status Badge */}
         {isConnected ? (
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{metrics?.engine_status.engine_type || "Engine Ready"}</span>
           </div>
         ) : (
@@ -80,9 +84,9 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             title="Click to start the engine"
-            className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 transition cursor-pointer shadow-sm animate-pulse"
+            className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 transition cursor-pointer shadow-sm animate-pulse"
           >
-            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
             <span>Start Engine</span>
           </button>
         )}
@@ -96,13 +100,28 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Launch Project</span>
         </button>
 
+        {/* Theme Toggle Button */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+            className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-indigo-500" />
+            )}
+          </button>
+        )}
+
         {/* Action Buttons */}
         <button
           onClick={onPrune}
           title="Clean up unused images & containers"
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-300 border border-zinc-800 transition"
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition"
         >
-          <Trash2 className="w-3.5 h-3.5 text-brand-400" />
+          <Trash2 className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
           <span>Prune</span>
         </button>
 
@@ -110,10 +129,10 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onRefresh}
           title="Refresh metrics"
           disabled={isRefreshing}
-          className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition disabled:opacity-50"
+          className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition disabled:opacity-50"
         >
           <RefreshCw
-            className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-brand-400" : ""}`}
+            className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-brand-500 dark:text-brand-400" : ""}`}
           />
         </button>
 
@@ -121,9 +140,9 @@ export const Header: React.FC<HeaderProps> = ({
           href="https://github.com/uchitchakma/myBox"
           target="_blank"
           rel="noreferrer"
-          className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition hover:text-white"
+          className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition hover:text-zinc-900 dark:hover:text-white"
         >
-          <Github className="w-4 h-4" />
+          <Github className="w-3.5 h-3.5" />
         </a>
       </div>
     </header>
