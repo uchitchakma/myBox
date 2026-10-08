@@ -35,6 +35,34 @@ Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written 
 
 ---
 
+## 📸 App Showcase
+
+<div align="center">
+  <p><strong>Minimalist developer UX, real-time host telemetry, and native container orchestration.</strong></p>
+</div>
+
+| 🌙 Dark Theme (Default) | ☀️ Light Theme |
+| :---: | :---: |
+| <img src="docs/screenshots/dashboard-dark.png" alt="myBox Dark Mode Dashboard" width="100%" /> | <img src="docs/screenshots/dashboard-light.png" alt="myBox Light Mode Dashboard" width="100%" /> |
+
+| 🚀 1-Click Auto-Detect & Launch Wizard | 📊 System Telemetry & Diagnostics |
+| :---: | :---: |
+| <img src="docs/screenshots/launch-modal.png" alt="Auto Detect Launch Modal" width="100%" /> | <img src="docs/screenshots/system-stats.png" alt="System Stats & Host Diagnostics" width="100%" /> |
+
+---
+
+## 📦 Downloads & Installation
+
+Get the latest production release directly from [**GitHub Releases**](https://github.com/uchitchakma/myBox/releases):
+
+| Operating System | Architecture | Package Format | Direct Download |
+| :--- | :--- | :--- | :--- |
+| 🍏 **macOS** | **Universal (All Macs)** | `.dmg` / `.zip` | [⬇️ **Download for macOS**](https://github.com/uchitchakma/myBox/releases/latest) |
+| 🪟 **Windows** | **64-bit (Windows 10/11)** | `.msi` / `.exe` | [⬇️ **Download for Windows**](https://github.com/uchitchakma/myBox/releases/latest) |
+| 🐧 **Linux** | **Debian / Ubuntu / Fedora** | `.deb` / `.AppImage` | [⬇️ **Download for Linux**](https://github.com/uchitchakma/myBox/releases/latest) |
+
+---
+
 ## ⚡ Quick Cheat Sheet (Common Commands)
 
 | Task | Desktop App (GUI) | CLI (`mybox`) |
