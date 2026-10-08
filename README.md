@@ -5,12 +5,19 @@
   <h3>The Ultra-Lightweight, Modern Container Desktop & Headless CLI</h3>
   <p><strong>Code Once, Run Everywhere: macOS • Windows • Linux / Ubuntu</strong></p>
 
+  [![Download Latest Release](https://img.shields.io/github/v/release/uchitchakma/myBox?label=Download%20myBox&color=C5453E&logo=github)](https://github.com/uchitchakma/myBox/releases)
   [![License: MIT](https://img.shields.io/badge/License-MIT-C5453E.svg)](https://opensource.org/licenses/MIT)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0-C5453E?logo=tauri)](https://tauri.app/)
   [![Rust](https://img.shields.io/badge/Rust-1.75+-orange?logo=rust)](https://www.rust-lang.org/)
   [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
   [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
   [![Primary Brand](https://img.shields.io/badge/Brand%20Color-%23C5453E-C5453E)](#)
+
+  <br />
+
+  <a href="https://github.com/uchitchakma/myBox/releases">
+    <img src="https://img.shields.io/badge/⬇️%20Download%20for%20macOS%20•%20Windows%20•%20Linux-C5453E?style=for-the-badge" alt="Download myBox" />
+  </a>
 </div>
 
 ---
