@@ -22,10 +22,14 @@ import {
 } from "./types";
 
 export function App() {
-  const [currentTab, setCurrentTab] = useState("dashboard");
+  const queryParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const initialTab = queryParams?.get("tab") || "dashboard";
+  const initialTheme = (queryParams?.get("theme") as "dark" | "light") || (localStorage.getItem("mybox_theme") as "dark" | "light") || "dark";
+  const initialLaunchModal = queryParams?.get("modal") === "launch";
+
+  const [currentTab, setCurrentTab] = useState<string>(initialTab);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    const saved = localStorage.getItem("mybox_theme");
-    return saved === "light" ? "light" : "dark";
+    return initialTheme === "light" ? "light" : "dark";
   });
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [containers, setContainers] = useState<ContainerItem[]>([]);
@@ -55,7 +59,7 @@ export function App() {
   const [containerLogs, setContainerLogs] = useState<ContainerLogs | null>(null);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [isLaunchModalOpen, setIsLaunchModalOpen] = useState(false);
+  const [isLaunchModalOpen, setIsLaunchModalOpen] = useState(initialLaunchModal);
 
   // Load All Data
   const loadData = useCallback(async () => {

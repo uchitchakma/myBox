@@ -38,16 +38,20 @@ Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written 
 ## 📸 App Showcase
 
 <div align="center">
-  <p><strong>Minimalist developer UX, real-time host telemetry, and native container orchestration.</strong></p>
+  <p><strong>Minimalist developer UX, CleanMyMac-inspired seamless titlebar, real-time host telemetry, and native container orchestration.</strong></p>
 </div>
 
 | 🌙 Dark Theme (Default) | ☀️ Light Theme |
 | :---: | :---: |
 | <img src="docs/screenshots/dashboard-dark.png" alt="myBox Dark Mode Dashboard" width="100%" /> | <img src="docs/screenshots/dashboard-light.png" alt="myBox Light Mode Dashboard" width="100%" /> |
 
-| 🚀 1-Click Auto-Detect & Launch Wizard | 📊 System Telemetry & Diagnostics |
+| 📦 Containers & Sandboxes Management | 🚀 1-Click Auto-Detect & Launch Wizard |
 | :---: | :---: |
-| <img src="docs/screenshots/launch-modal.png" alt="Auto Detect Launch Modal" width="100%" /> | <img src="docs/screenshots/system-stats.png" alt="System Stats & Host Diagnostics" width="100%" /> |
+| <img src="docs/screenshots/containers-view.png" alt="Containers Sandboxes Management" width="100%" /> | <img src="docs/screenshots/launch-modal.png" alt="Auto Detect Launch Modal" width="100%" /> |
+
+| 📊 System Telemetry & Live Resource Diagnostics |
+| :---: |
+| <img src="docs/screenshots/system-stats.png" alt="System Stats & Host Diagnostics" width="100%" /> |
 
 ---
 

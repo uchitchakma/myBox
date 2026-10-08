@@ -38,7 +38,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-64 bg-white dark:bg-zinc-950/90 border-r border-zinc-200 dark:border-zinc-800/80 flex flex-col justify-between h-screen select-none transition-colors duration-200">
       {/* Brand Header */}
       <div>
-        <div data-tauri-drag-region className="pt-9 pb-4 px-5 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/60">
+        <div data-tauri-drag-region className="pt-4 pb-4 px-5 border-b border-zinc-200 dark:border-zinc-800/60">
+          {/* macOS Window Traffic Lights */}
+          <div className="flex items-center space-x-2 mb-3.5 pt-1">
+            <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/80 shadow-sm inline-block" />
+            <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/80 shadow-sm inline-block" />
+            <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/80 shadow-sm inline-block" />
+          </div>
+
           <div className="flex items-center space-x-3">
             <img
               src="/icon.png"
