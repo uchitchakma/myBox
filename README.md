@@ -16,7 +16,7 @@
   <br />
 
   <a href="https://github.com/uchitchakma/myBox/releases">
-    <img src="https://img.shields.io/badge/⬇️%20Download%20for%20macOS%20(Apple%20Silicon)-C5453E?style=for-the-badge" alt="Download myBox for macOS" />
+    <img src="https://img.shields.io/badge/⬇️%20Download%20for%20macOS%20•%20Windows%20•%20Linux-C5453E?style=for-the-badge" alt="Download myBox for macOS, Windows & Linux" />
   </a>
 </div>
 
