@@ -40,9 +40,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         <div className="p-5 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/60">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-brand-500/30">
-              <Box className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/icon.png"
+              alt="myBox Logo"
+              className="w-9 h-9 rounded-xl object-cover shadow-lg shadow-brand-500/20 ring-1 ring-zinc-200 dark:ring-zinc-800/50"
+            />
             <div>
               <div className="flex items-center space-x-1.5">
                 <span className="font-extrabold text-lg tracking-tight text-zinc-900 dark:text-white">

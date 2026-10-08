@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Box, ExternalLink, Github, Sparkles } from "lucide-react";
+import { X, ExternalLink, Github, Sparkles } from "lucide-react";
 import { AppInfo } from "../types";
 
 interface AboutModalProps {
@@ -21,9 +21,11 @@ export const AboutModal: React.FC<AboutModalProps> = ({ appInfo, onClose }) => {
           </button>
 
           <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 rounded-2xl bg-brand-500 flex items-center justify-center text-white shadow-xl shadow-brand-500/30">
-              <Box className="w-8 h-8 text-white" />
-            </div>
+            <img
+              src="/icon.png"
+              alt="myBox Logo"
+              className="w-14 h-14 rounded-2xl object-cover shadow-xl shadow-brand-500/30 ring-1 ring-zinc-200 dark:ring-zinc-800/50"
+            />
             <div>
               <div className="flex items-center space-x-2">
                 <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white tracking-tight">

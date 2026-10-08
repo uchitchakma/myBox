@@ -1,7 +1,7 @@
 # ⚡ myBox
 
 <div align="center">
-  <img src="frontend/public/logo.svg" alt="myBox Logo" width="100" />
+  <img src="crates/mybox-desktop/icons/128x128@2x.png" alt="myBox Logo" width="128" />
   <h3>The Ultra-Lightweight, Modern Container Desktop & Headless CLI</h3>
   <p><strong>Code Once, Run Everywhere: macOS • Windows • Linux / Ubuntu</strong></p>
 
