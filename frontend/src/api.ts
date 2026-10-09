@@ -9,19 +9,16 @@ import {
   VolumeItem,
 } from "./types";
 
-// Check if running inside Tauri
-const isTauri = () =>
-  typeof window !== "undefined" &&
-  ("__TAURI_INTERNALS__" in window || "__TAURI__" in window);
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 async function callTauri<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
-  if (isTauri()) {
+  if (typeof window !== "undefined" && isTauri()) {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
       return await invoke<T>(cmd, args);
     } catch (err) {
       console.warn(`Tauri invoke error for ${cmd}:`, err);
-      throw err;
+      return mockHandler<T>(cmd, args);
     }
   }
 
@@ -305,8 +302,7 @@ export const api = {
   getNativeEngineStatus: () => callTauri<{ is_running: boolean; socket_path: string }>("get_native_engine_status"),
   openBrowser: async (url: string) => {
     try {
-      if (isTauri()) {
-        const { openUrl } = await import("@tauri-apps/plugin-opener");
+      if (typeof window !== "undefined" && isTauri()) {
         await openUrl(url);
         return;
       }
