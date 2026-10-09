@@ -53,10 +53,14 @@ impl DockerEngine {
                 }
             }
 
-            candidates.push((
-                "unix:///var/run/docker.sock".to_string(),
-                "myBox Hypervisor Engine".to_string(),
-            ));
+            // Check /var/run/docker.sock only if the target actually exists
+            let var_sock = std::path::Path::new("/var/run/docker.sock");
+            if var_sock.exists() {
+                candidates.push((
+                    "unix:///var/run/docker.sock".to_string(),
+                    "myBox Hypervisor Engine".to_string(),
+                ));
+            }
 
             // Lightweight unix sockets
             if let Some(home) = dirs::home_dir() {
@@ -112,29 +116,17 @@ impl DockerEngine {
             ));
         }
 
-        // Try candidate connections
+        // Try candidate connections with fast 250ms ping timeout
         for (candidate_socket, engine_label) in candidates {
-            if let Ok(docker) = Docker::connect_with_socket(&candidate_socket, 120, bollard::API_DEFAULT_VERSION) {
-                if docker.ping().await.is_ok() {
+            if let Ok(docker) = Docker::connect_with_socket(&candidate_socket, 2, bollard::API_DEFAULT_VERSION) {
+                if let Ok(Ok(_)) = tokio::time::timeout(std::time::Duration::from_millis(250), docker.ping()).await {
                     log::info!("myBox connected to {} via {}", engine_label, candidate_socket);
                     return (Some(docker), candidate_socket, engine_label);
                 }
             }
         }
 
-        // Fallback default connect
-        if let Ok(docker) = Docker::connect_with_local_defaults() {
-            if docker.ping().await.is_ok() {
-                return (
-                    Some(docker),
-                    "local_defaults".to_string(),
-                    "myBox Hypervisor Engine".to_string(),
-                );
-            }
-        }
-
-
-        log::warn!("myBox: No running container runtime detected. Running in detached mode.");
+        log::info!("myBox: Running in standalone native mode (zero external engine dependencies).");
         (None, "None".to_string(), "Offline".to_string())
     }
 

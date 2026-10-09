@@ -4,15 +4,16 @@
   "version": "0.1.0",
   "identifier": "com.ucdreams.mybox",
   "build": {
-    "beforeDevCommand": "npm --prefix ../frontend run dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "npm --prefix ../frontend run build",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../../frontend/dist"
   },
   "app": {
     "windows": [
       {
         "title": "myBox",
+        "url": "index.html",
         "width": 1180,
         "height": 780,
         "minWidth": 900,
