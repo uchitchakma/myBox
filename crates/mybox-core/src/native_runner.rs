@@ -503,18 +503,6 @@ pub fn get_system_path() -> String {
                     let _ = std::process::Command::new("kill").args(["-KILL", &format!("-{}", pid)]).output();
                     let _ = std::process::Command::new("kill").args(["-KILL", &pid.to_string()]).output();
                 }
-                if svc.port > 0 {
-                    if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &format!(":{}", svc.port)]).output() {
-                        let pids_str = String::from_utf8_lossy(&out.stdout);
-                        for p in pids_str.split_whitespace() {
-                            if let Ok(p_num) = p.parse::<u32>() {
-                                if p_num != std::process::id() {
-                                    let _ = std::process::Command::new("kill").args(["-9", &p_num.to_string()]).output();
-                                }
-                            }
-                        }
-                    }
-                }
             }
             #[cfg(windows)]
             {
@@ -544,14 +532,19 @@ pub fn get_system_path() -> String {
             let project = svc.project_path.clone();
             let port = crate::detector::FrameworkDetector::find_available_port(if svc.port > 0 { svc.port } else { 3000 });
 
-            if cmd.contains("apache2") || cmd.contains("apache") || cmd.is_empty() || cmd == "mybox up" {
-                if dir.join("wp-config.php").exists() || dir.join("index.php").exists() {
-                    cmd = format!("php -S 0.0.0.0:{}", port);
-                } else if dir.join("package.json").exists() {
-                    cmd = format!("npm run dev -- --port {} --host || npm start", port);
+            if dir.join("package.json").exists() {
+                let pkg = std::fs::read_to_string(dir.join("package.json")).unwrap_or_default().to_lowercase();
+                if pkg.contains("\"next\"") || dir.join("next.config.js").exists() || dir.join("next.config.ts").exists() || dir.join("next.config.mjs").exists() {
+                    cmd = format!("npx next dev -p {}", port);
+                } else if pkg.contains("\"dev\"") {
+                    cmd = format!("npm run dev -- --port {} --host || npm run dev -p {} || npm start", port, port);
                 } else {
-                    cmd = format!("python3 -m http.server {}", port);
+                    cmd = format!("npm start -- -p {}", port);
                 }
+            } else if dir.join("wp-config.php").exists() || dir.join("index.php").exists() || dir.join("wp-content").is_dir() {
+                cmd = format!("php -S 0.0.0.0:{}", port);
+            } else if cmd.contains("apache2") || cmd.contains("apache") || cmd.is_empty() || cmd == "mybox up" {
+                cmd = format!("python3 -m http.server {}", port);
             }
 
             let mut envs = svc.env_vars.clone();
@@ -601,18 +594,6 @@ pub fn get_system_path() -> String {
                         let _ = std::process::Command::new("kill").args(["-TERM", &pid.to_string()]).output();
                         let _ = std::process::Command::new("kill").args(["-KILL", &format!("-{}", pid)]).output();
                         let _ = std::process::Command::new("kill").args(["-KILL", &pid.to_string()]).output();
-                    }
-                    if svc.port > 0 {
-                        if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &format!(":{}", svc.port)]).output() {
-                            let pids_str = String::from_utf8_lossy(&out.stdout);
-                            for p in pids_str.split_whitespace() {
-                                if let Ok(p_num) = p.parse::<u32>() {
-                                    if p_num != std::process::id() {
-                                        let _ = std::process::Command::new("kill").args(["-9", &p_num.to_string()]).output();
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
                 #[cfg(windows)]
