@@ -684,7 +684,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                 {activeTunnelUrl && (
                   <span className="text-[10px] text-emerald-500 font-semibold flex items-center space-x-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
-                    <span>Live on Cloudflare / Edge CDN</span>
+                    <span>{activeTunnelUrl.includes("trycloudflare") ? "Live on Cloudflare Edge (Verified)" : "Live on Edge CDN (Verified)"}</span>
                   </span>
                 )}
               </label>
@@ -692,7 +692,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
               {isSharingLoading ? (
                 <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center space-x-2 text-zinc-500 text-xs">
                   <RotateCw className="w-4 h-4 animate-spin text-brand-500" />
-                  <span>Spawning secure public tunnel...</span>
+                  <span>Connecting tunnel & registering edge nodes...</span>
                 </div>
               ) : activeTunnelUrl ? (
                 <div className="flex items-center space-x-2">

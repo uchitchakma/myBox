@@ -107,7 +107,12 @@ impl NativeRunner {
             // 2. Frontend Service
             let f_port = crate::detector::FrameworkDetector::find_available_port(3000);
             let f_cmd = if f_path.join("package.json").exists() {
-                format!("npm run dev -- --port {} || npm start", f_port)
+                let pkg = std::fs::read_to_string(f_path.join("package.json")).unwrap_or_default().to_lowercase();
+                if pkg.contains("\"next\"") || f_path.join("next.config.js").exists() || f_path.join("next.config.ts").exists() || f_path.join("next.config.mjs").exists() {
+                    format!("npx next dev -H 0.0.0.0 -p {}", f_port)
+                } else {
+                    format!("npm run dev -- --port {} --host || npm start", f_port)
+                }
             } else {
                 "npm start".to_string()
             };
@@ -164,7 +169,7 @@ impl NativeRunner {
             if root.join("package.json").exists() {
                 let pkg = std::fs::read_to_string(root.join("package.json")).unwrap_or_default().to_lowercase();
                 if pkg.contains("\"next\"") || root.join("next.config.js").exists() || root.join("next.config.ts").exists() || root.join("next.config.mjs").exists() {
-                    cmd = format!("npx next dev -p {}", port);
+                    cmd = format!("npx next dev -H 0.0.0.0 -p {}", port);
                 } else if pkg.contains("\"dev\"") {
                     cmd = format!("npm run dev -- --port {} --host || npm run dev -p {} || npm start", port, port);
                 } else if cmd == "mybox up" || cmd.is_empty() || cmd.contains("npm start") || cmd.contains("npm install") {
@@ -535,7 +540,7 @@ pub fn get_system_path() -> String {
             if dir.join("package.json").exists() {
                 let pkg = std::fs::read_to_string(dir.join("package.json")).unwrap_or_default().to_lowercase();
                 if pkg.contains("\"next\"") || dir.join("next.config.js").exists() || dir.join("next.config.ts").exists() || dir.join("next.config.mjs").exists() {
-                    cmd = format!("npx next dev -p {}", port);
+                    cmd = format!("npx next dev -H 0.0.0.0 -p {}", port);
                 } else if pkg.contains("\"dev\"") {
                     cmd = format!("npm run dev -- --port {} --host || npm run dev -p {} || npm start", port, port);
                 } else {

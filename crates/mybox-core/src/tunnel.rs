@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
@@ -110,10 +111,15 @@ impl TunnelManager {
     async fn spawn_cloudflared(port: u16) -> Result<(String, Child)> {
         let cf_bin = Self::get_cloudflared_path();
         let mut cmd = Command::new(cf_bin);
-        cmd.args(["tunnel", "--url", &format!("http://127.0.0.1:{}", port), "--no-autoupdate"])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .env("PATH", crate::native_runner::NativeRunner::get_system_path());
+        cmd.args([
+            "tunnel",
+            "--url", &format!("http://127.0.0.1:{}", port),
+            "--http-host-header", "localhost",
+            "--no-autoupdate",
+        ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .env("PATH", crate::native_runner::NativeRunner::get_system_path());
 
         let mut child = cmd.spawn().context("Failed to spawn cloudflared")?;
         let stderr = child.stderr.take().context("No stderr")?;
@@ -122,24 +128,53 @@ impl TunnelManager {
         let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(1);
 
         tokio::spawn(async move {
+            let mut detected_url: Option<String> = None;
+            let sent = Arc::new(AtomicBool::new(false));
+
             while let Ok(Some(line)) = reader.next_line().await {
-                if line.contains("trycloudflare.com") {
+                log::info!("myBox Cloudflare: {}", line);
+
+                // 1. Detect the quick tunnel URL
+                if detected_url.is_none() && line.contains("trycloudflare.com") {
                     for word in line.split_whitespace() {
                         let clean = word.trim_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '/' && c != '.' && c != '-');
                         if clean.starts_with("https://") && clean.contains("trycloudflare.com") {
-                            let _ = tx.send(clean.to_string()).await;
-                            return;
+                            detected_url = Some(clean.to_string());
+
+                            // Safety timer: after 16s from discovery, if "Registered" wasn't parsed, send anyway
+                            let tx_timer = tx.clone();
+                            let url_clone = clean.to_string();
+                            let sent_timer = sent.clone();
+                            tokio::spawn(async move {
+                                tokio::time::sleep(std::time::Duration::from_secs(16)).await;
+                                if !sent_timer.swap(true, Ordering::SeqCst) {
+                                    let _ = tx_timer.send(url_clone).await;
+                                }
+                            });
+                            break;
                         }
                     }
                 }
+
+                // 2. Wait until Cloudflare edge nodes have registered the connector
+                // This guarantees the visitor will not receive Cloudflare Error 1033.
+                if detected_url.is_some() && (line.contains("Registered tunnel connection") || line.contains("Registered tunnel")) {
+                    if let Some(ref url) = detected_url {
+                        if !sent.swap(true, Ordering::SeqCst) {
+                            let _ = tx.send(url.clone()).await;
+                        }
+                    }
+                }
+
+                // IMPORTANT: Keep draining reader so cloudflared process never gets SIGPIPE or full pipe buffer!
             }
         });
 
-        match tokio::time::timeout(std::time::Duration::from_secs(15), rx.recv()).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(25), rx.recv()).await {
             Ok(Some(url)) => Ok((url, child)),
             _ => {
                 let _ = child.kill().await;
-                anyhow::bail!("Cloudflare tunnel timed out");
+                anyhow::bail!("Cloudflare tunnel timed out or not registered in time");
             }
         }
     }
@@ -153,7 +188,6 @@ impl TunnelManager {
             "-o", "ExitOnForwardFailure=yes",
             "-R", &format!("80:127.0.0.1:{}", port),
             "nokey@localhost.run",
-            "--", "--no-inject-http-auth"
         ])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -166,20 +200,24 @@ impl TunnelManager {
         let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(1);
 
         tokio::spawn(async move {
+            let mut sent = false;
             while let Ok(Some(line)) = reader.next_line().await {
-                if line.contains("https://") {
+                log::info!("myBox SSH: {}", line);
+                if !sent && line.contains("https://") {
                     for word in line.split_whitespace() {
                         let clean = word.trim_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '/' && c != '.' && c != '-');
                         if clean.starts_with("https://") && (clean.contains(".lhrtunnel.pro") || clean.contains(".lhr.life") || clean.contains(".localhost.run")) {
+                            sent = true;
                             let _ = tx.send(clean.to_string()).await;
-                            return;
+                            break;
                         }
                     }
                 }
+                // Continue reading to prevent pipe closure or full pipe buffer
             }
         });
 
-        match tokio::time::timeout(std::time::Duration::from_secs(15), rx.recv()).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(12), rx.recv()).await {
             Ok(Some(url)) => Ok((url, child)),
             _ => {
                 let _ = child.kill().await;
@@ -202,19 +240,22 @@ impl TunnelManager {
         let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(1);
 
         tokio::spawn(async move {
+            let mut sent = false;
             while let Ok(Some(line)) = reader.next_line().await {
-                if line.contains("https://") && line.contains("loca.lt") {
+                if !sent && line.contains("https://") && line.contains("loca.lt") {
                     for word in line.split_whitespace() {
                         if word.starts_with("https://") && word.contains("loca.lt") {
+                            sent = true;
                             let _ = tx.send(word.trim().to_string()).await;
-                            return;
+                            break;
                         }
                     }
                 }
+                // Continue reading to prevent pipe closure
             }
         });
 
-        match tokio::time::timeout(std::time::Duration::from_secs(8), rx.recv()).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(12), rx.recv()).await {
             Ok(Some(url)) => Ok((url, child)),
             _ => {
                 let _ = child.kill().await;
