@@ -157,6 +157,27 @@ enum Commands {
         port: u16,
     },
 
+    /// Share a running container or local port publicly with an instant HTTPS URL (alias: live)
+    #[command(alias = "live")]
+    Share {
+        /// Container ID/name or local port number (e.g. 3000, 8080)
+        target: String,
+
+        /// Optional port number if specifying container ID
+        #[arg(short, long)]
+        port: Option<u16>,
+    },
+
+    /// Stop live public sharing for a container or port
+    Unshare {
+        /// Container ID/name or port
+        target: String,
+    },
+
+    /// View saved persistent project history across reinstalls (alias: projects)
+    #[command(alias = "projects")]
+    History,
+
     /// Print myBox system information and runtime diagnostics
     Info,
 }
@@ -195,6 +216,22 @@ struct VolumeRow {
     driver: String,
     #[tabled(rename = "MOUNTPOINT")]
     mountpoint: String,
+}
+
+#[derive(Tabled)]
+struct ProjectRow {
+    #[tabled(rename = "PROJECT ID")]
+    id: String,
+    #[tabled(rename = "NAME")]
+    name: String,
+    #[tabled(rename = "PRESET")]
+    preset: String,
+    #[tabled(rename = "PATH")]
+    path: String,
+    #[tabled(rename = "PORT")]
+    port: u16,
+    #[tabled(rename = "LAST LAUNCHED")]
+    last_launched: String,
 }
 
 fn print_banner() {
@@ -527,9 +564,6 @@ async fn main() -> Result<()> {
         }
 
         Some(Commands::Server { port }) => {
-
-
-
             print_banner();
             println!(
                 "{}",
@@ -550,6 +584,90 @@ async fn main() -> Result<()> {
                 );
                 tokio::time::sleep(Duration::from_secs(5)).await;
             }
+        }
+
+        Some(Commands::Share { target, port }) => {
+            let port_to_share = if let Ok(p) = target.parse::<u16>() {
+                p
+            } else if let Some(p) = port {
+                p
+            } else {
+                let containers = docker.list_containers(true).await?;
+                if let Some(c) = containers.into_iter().find(|c| c.id.starts_with(&target) || c.name == target || c.short_id == target) {
+                    c.ports.first().and_then(|p| p.public_port.or(Some(p.private_port))).unwrap_or(3000)
+                } else {
+                    3000
+                }
+            };
+
+            let pb = ProgressBar::new_spinner();
+            pb.set_message(format!("🌐 Generating secure live HTTPS tunnel for port {}...", port_to_share));
+            pb.enable_steady_tick(Duration::from_millis(80));
+
+            let tunnel = mybox_core::TunnelManager::global();
+            match tunnel.start_tunnel(&target, port_to_share).await {
+                Ok(url) => {
+                    pb.finish_and_clear();
+                    print_banner();
+                    println!("{}", "✨ Container / Service is now LIVE on the Public Internet!".green().bold());
+                    println!("  • Local Port:  {}", format!("http://localhost:{}", port_to_share).cyan());
+                    println!("  • Public URL:  {}", url.bold().underline().green());
+                    println!("  • Target:      {}", target.yellow());
+                    println!("\n💡 Share this URL with clients or team members. Press Ctrl+C or run 'mybox unshare {}' to stop.\n", target);
+
+                    // Wait for Ctrl+C to stop the tunnel
+                    tokio::signal::ctrl_c().await?;
+                    println!("\nStopping live tunnel...");
+                    let _ = tunnel.stop_tunnel(&target).await;
+                    println!("{}", "✓ Live sharing stopped.".yellow());
+                }
+                Err(e) => {
+                    pb.finish_and_clear();
+                    eprintln!("{}", format!("Failed to create live tunnel: {}", e).red().bold());
+                }
+            }
+        }
+
+        Some(Commands::Unshare { target }) => {
+            let tunnel = mybox_core::TunnelManager::global();
+            match tunnel.stop_tunnel(&target).await {
+                Ok(_) => println!("{}", format!("✓ Public share stopped for '{}'.", target).yellow().bold()),
+                Err(e) => eprintln!("{}", format!("Failed to stop share: {}", e).red().bold()),
+            }
+        }
+
+        Some(Commands::History) => {
+            let storage = mybox_core::ProjectStorage::global();
+            let projects = storage.list_projects();
+
+            print_banner();
+            println!("{}", "🗄️  Saved Persistent Projects (Stored in ~/.mybox/projects.json):".bold());
+            if projects.is_empty() {
+                println!("{}", "No saved projects found. Run or launch a project to save it automatically.".yellow());
+                return Ok(());
+            }
+
+            let rows: Vec<ProjectRow> = projects
+                .into_iter()
+                .map(|p| {
+                    let formatted_time = chrono::DateTime::from_timestamp(p.last_launched_at / 1000, 0)
+                        .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
+                        .unwrap_or_else(|| "Unknown".to_string());
+                    ProjectRow {
+                        id: p.id.cyan().to_string(),
+                        name: p.name.bold().to_string(),
+                        preset: p.framework_name.yellow().to_string(),
+                        path: p.path,
+                        port: p.default_port,
+                        last_launched: formatted_time,
+                    }
+                })
+                .collect();
+
+            let mut table = Table::new(rows);
+            table.with(Style::rounded());
+            println!("{}", table);
+            println!("💡 Run 'mybox up -p <path>' to start any saved project.");
         }
 
         Some(Commands::Info) | None => {

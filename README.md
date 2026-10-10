@@ -71,6 +71,9 @@ Get the latest production release directly from [**GitHub Releases**](https://gi
 
 | Task | Desktop App (GUI) | CLI (`mybox`) |
 | :--- | :--- | :--- |
+| **🌐 Share Live Public URL** | Click `🌐 Share Live` on any container ➔ Instant HTTPS link | `mybox share <container_or_port>` (alias: `mybox live`) |
+| **🛑 Stop Live Sharing** | Click `Stop Sharing` in Live Modal | `mybox unshare <container>` |
+| **🗄️ Persistent History** | Auto-restored offline projects in Containers tab | `mybox history` (alias: `mybox projects`) |
 | **Auto-Detect & Init** | Select folder in Launch Wizard ➔ Auto-configures | `mybox init` (or `mybox detect`) |
 | **Launch Project** | Click `🚀 Launch Project` ➔ Pick folder ➔ Click Launch | `mybox up` |
 | **Stop Project** | Click `Stop` button | `mybox down` |
@@ -81,6 +84,38 @@ Get the latest production release directly from [**GitHub Releases**](https://gi
 | **Stream Live Logs** | Click `Logs` button next to any container | `mybox logs <name> --tail 50` |
 | **Reclaim Disk Space** | Click `Prune System` button (Top Header) | `mybox prune` |
 | **View System Stats** | Visual CPU & RAM graphs in Header / Stats tab | `mybox stats` |
+
+---
+
+## 🌐 1-Click Live Public Sharing (Client Previews & Remote Access)
+
+Want to show your local container to a client, QA tester, or mobile device without configuring firewall port-forwarding or creating cloud accounts?
+
+* **In the Desktop App:** Click the **`🌐 Share Live`** button next to any running container. **myBox** instantly generates a secure public HTTPS URL (e.g. `https://xxxx.trycloudflare.com` or `https://xxxx.lhr.life`).
+  * 📋 **1-Click Copy** to clipboard
+  * 🌍 **Open in Browser** shortcut
+  * 🛑 **Stop Live Sharing** to instantly revoke public access anytime.
+* **In the CLI:**
+  ```bash
+  # Share a container by name or ID
+  mybox share my-web-app
+
+  # Or share any local port directly
+  mybox share 3000
+
+  # Stop sharing
+  mybox unshare my-web-app
+  ```
+
+---
+
+## 🗄️ Persistent Project & Container History
+
+Never lose your project configurations or sandboxes:
+* **Survives App Reinstalls & Deletions:** All project configurations, presets, ports, and environment paths are stored safely in `~/.mybox/projects.json`.
+* If you delete the app, upgrade versions, or clear temporary containers, reinstalling **myBox** immediately detects your historical projects in the **Containers** view with a `📂 Offline Project` badge.
+* Click **`▶️ Run`** anytime to reboot the project from its original folder!
+* In the CLI, run **`mybox history`** to inspect all saved projects.
 
 ---
 
@@ -181,6 +216,17 @@ mybox exec my-web-app npm install lodash
 ## 💻 Complete CLI Reference
 
 ```bash
+# Share a running container or local port publicly with instant HTTPS URL
+mybox share <container_or_port>
+mybox live <container_or_port>
+
+# Stop public live sharing
+mybox unshare <container_or_port>
+
+# View persistent saved project history across app reinstalls
+mybox history
+mybox projects
+
 # Auto-detect project framework and generate mybox.yaml
 mybox init [--path <dir>] [--force]
 
@@ -208,6 +254,10 @@ mybox volumes
 
 # View last 100 log lines
 mybox logs <container> --tail 100
+
+# Execute command or open interactive shell inside container
+mybox exec <container> [command]
+mybox sh <container>
 
 # Start, Stop, Restart, Remove
 mybox start <container>
