@@ -215,6 +215,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </span>
                           )}
 
+                          {/* Live Public URL badge */}
+                          {isRunning && g.services.some((s) => s.public_url) && (
+                            <button
+                              onClick={() => {
+                                const liveUrl = g.services.find((s) => s.public_url)?.public_url;
+                                if (liveUrl) api.openBrowser(liveUrl);
+                              }}
+                              title="Open Live Public URL"
+                              className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold shadow-sm"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                              <span>🌐 Live</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70 ml-0.5" />
+                            </button>
+                          )}
+
                           {/* Quick clickable port pills */}
                           {isRunning &&
                             g.ports.map((p, idx) => {

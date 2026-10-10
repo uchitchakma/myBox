@@ -17,6 +17,25 @@ pub struct ContainerItem {
     pub is_running: bool,
     #[serde(default)]
     pub project_name: Option<String>,
+    #[serde(default)]
+    pub project_path: Option<String>,
+    #[serde(default)]
+    pub public_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavedProject {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub framework_id: String,
+    pub framework_name: String,
+    pub default_port: u16,
+    pub created_at: i64,
+    pub last_launched_at: i64,
+    pub is_running: bool,
+    #[serde(default)]
+    pub public_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

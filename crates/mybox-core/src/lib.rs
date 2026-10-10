@@ -6,6 +6,8 @@ pub mod models;
 pub mod native_runner;
 pub mod project;
 pub mod stats;
+pub mod storage;
+pub mod tunnel;
 
 pub use config::*;
 pub use detector::FrameworkDetector;
@@ -15,4 +17,6 @@ pub use models::*;
 pub use native_runner::NativeRunner;
 pub use project::ProjectManager;
 pub use stats::StatsCollector;
+pub use storage::ProjectStorage;
+pub use tunnel::TunnelManager;
 

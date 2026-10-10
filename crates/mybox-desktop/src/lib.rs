@@ -230,6 +230,39 @@ async fn get_native_engine_status() -> Result<mybox_core::HypervisorStatus, Stri
     Ok(mybox_core::HypervisorManager::check_status().await)
 }
 
+#[tauri::command]
+async fn share_container_live(id: String, port: u16) -> Result<String, String> {
+    mybox_core::TunnelManager::global()
+        .start_tunnel(&id, port)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn stop_container_share(id: String) -> Result<(), String> {
+    mybox_core::TunnelManager::global()
+        .stop_tunnel(&id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_active_tunnels() -> Result<std::collections::HashMap<String, String>, String> {
+    Ok(mybox_core::TunnelManager::global().get_active_tunnels().await)
+}
+
+#[tauri::command]
+async fn get_saved_projects() -> Result<Vec<mybox_core::SavedProject>, String> {
+    Ok(mybox_core::ProjectStorage::global().list_projects())
+}
+
+#[tauri::command]
+async fn remove_saved_project(path: String) -> Result<(), String> {
+    mybox_core::ProjectStorage::global()
+        .remove_project(&path)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -272,6 +305,11 @@ pub fn run() {
             start_native_engine,
             stop_native_engine,
             get_native_engine_status,
+            share_container_live,
+            stop_container_share,
+            get_active_tunnels,
+            get_saved_projects,
+            remove_saved_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");

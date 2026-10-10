@@ -225,6 +225,8 @@ impl DockerEngine {
                         memory_percent: 0.0,
                         is_running,
                         project_name,
+                        project_path: None,
+                        public_url: None,
                     });
                 }
             }
@@ -234,6 +236,15 @@ impl DockerEngine {
     }
 
     pub async fn start_container(&self, id: &str) -> Result<()> {
+        if id.starts_with("saved-") {
+            let saved_id = id.trim_start_matches("saved-");
+            let saved_list = crate::storage::ProjectStorage::global().list_projects();
+            if let Some(p) = saved_list.iter().find(|item| item.id == saved_id || format!("saved-{}", item.id) == id) {
+                let detected = crate::detector::FrameworkDetector::detect(&p.path);
+                return crate::native_runner::NativeRunner::launch_project_natively(&p.path, &detected).await.map(|_| ());
+            }
+        }
+
         if id.starts_with("native-") {
             return crate::native_runner::NativeRunner::global().restart_service(id).await;
         }
@@ -249,7 +260,8 @@ impl DockerEngine {
     }
 
     pub async fn stop_container(&self, id: &str) -> Result<()> {
-        if id.starts_with("native-") {
+        if id.starts_with("native-") || id.starts_with("saved-") {
+            let _ = crate::tunnel::TunnelManager::global().stop_tunnel(id).await;
             return crate::native_runner::NativeRunner::global().stop_service(id).await;
         }
 
@@ -263,8 +275,8 @@ impl DockerEngine {
     }
 
     pub async fn restart_container(&self, id: &str) -> Result<()> {
-        if id.starts_with("native-") {
-            return crate::native_runner::NativeRunner::global().restart_service(id).await;
+        if id.starts_with("native-") || id.starts_with("saved-") {
+            return self.start_container(id).await;
         }
 
         let client = self
@@ -277,7 +289,19 @@ impl DockerEngine {
     }
 
     pub async fn remove_container(&self, id: &str, force: bool) -> Result<()> {
+        if id.starts_with("saved-") {
+            let saved_id = id.trim_start_matches("saved-");
+            let saved_list = crate::storage::ProjectStorage::global().list_projects();
+            if let Some(p) = saved_list.iter().find(|item| item.id == saved_id || format!("saved-{}", item.id) == id) {
+                let _ = crate::storage::ProjectStorage::global().remove_project(&p.path);
+                let _ = crate::native_runner::NativeRunner::global().remove_service(id).await;
+                let _ = crate::tunnel::TunnelManager::global().stop_tunnel(id).await;
+                return Ok(());
+            }
+        }
+
         if id.starts_with("native-") {
+            let _ = crate::tunnel::TunnelManager::global().stop_tunnel(id).await;
             return crate::native_runner::NativeRunner::global().remove_service(id).await;
         }
 

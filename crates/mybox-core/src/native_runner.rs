@@ -137,6 +137,19 @@ impl NativeRunner {
             ).await?;
             launched_names.push("Frontend");
 
+            let _ = crate::storage::ProjectStorage::global().save_project(crate::models::SavedProject {
+                id: format!("project-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
+                name: detected.name.clone(),
+                path: project_path.to_string(),
+                framework_id: detected.framework_id.clone(),
+                framework_name: detected.name.clone(),
+                default_port: f_port,
+                created_at: chrono::Utc::now().timestamp_millis(),
+                last_launched_at: chrono::Utc::now().timestamp_millis(),
+                is_running: true,
+                public_url: None,
+            });
+
             Ok(format!(
                 "✓ Launched native myBox sandboxes ({}) on http://localhost:{} (Zero Docker required)!",
                 launched_names.join(" & "), f_port
@@ -195,6 +208,19 @@ impl NativeRunner {
                 port,
                 envs,
             ).await?;
+
+            let _ = crate::storage::ProjectStorage::global().save_project(crate::models::SavedProject {
+                id: format!("project-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
+                name: detected.name.clone(),
+                path: project_path.to_string(),
+                framework_id: detected.framework_id.clone(),
+                framework_name: detected.name.clone(),
+                default_port: port,
+                created_at: chrono::Utc::now().timestamp_millis(),
+                last_launched_at: chrono::Utc::now().timestamp_millis(),
+                is_running: true,
+                public_url: None,
+            });
 
             Ok(format!(
                 "✓ Launched '{}' natively on port http://localhost:{} (Zero Docker required)!",
@@ -417,6 +443,7 @@ fn get_system_path() -> String {
                 .file_name()
                 .and_then(|n| n.to_str())
                 .map(|s| s.to_string());
+            let public_url = crate::tunnel::TunnelManager::global().get_tunnel_url(&svc.id).await;
 
             items.push(ContainerItem {
                 id: svc.id.clone(),
@@ -438,7 +465,45 @@ fn get_system_path() -> String {
                 memory_percent: ((mem_mb / 2048.0) * 100.0 * 10.0).round() / 10.0,
                 is_running,
                 project_name: p_name,
+                project_path: Some(svc.project_path.clone()),
+                public_url,
             });
+        }
+
+        // Include saved historical projects that are currently offline
+        let saved_projects = crate::storage::ProjectStorage::global().list_projects();
+        for p in saved_projects {
+            let already_listed = items.iter().any(|item| {
+                item.project_path.as_deref() == Some(&p.path)
+            });
+
+            if !already_listed {
+                let p_id = format!("saved-{}", p.id);
+                let short_id = p_id.chars().take(12).collect::<String>();
+                items.push(ContainerItem {
+                    id: p_id,
+                    short_id,
+                    name: p.name.clone(),
+                    image: format!("native:{}", p.framework_id),
+                    state: "exited".to_string(),
+                    status: "Saved Project (Ready to Launch)".to_string(),
+                    created: p.created_at,
+                    ports: vec![PortMapping {
+                        ip: Some("127.0.0.1".to_string()),
+                        private_port: p.default_port,
+                        public_port: Some(p.default_port),
+                        proto: "tcp".to_string(),
+                    }],
+                    cpu_usage: 0.0,
+                    memory_usage_mb: 0.0,
+                    memory_limit_mb: 2048.0,
+                    memory_percent: 0.0,
+                    is_running: false,
+                    project_name: Some(p.name.clone()),
+                    project_path: Some(p.path.clone()),
+                    public_url: None,
+                });
+            }
         }
 
         items

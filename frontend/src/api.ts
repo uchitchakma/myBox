@@ -300,6 +300,16 @@ export const api = {
   startNativeEngine: () => callTauri<string>("start_native_engine"),
   stopNativeEngine: () => callTauri<string>("stop_native_engine"),
   getNativeEngineStatus: () => callTauri<{ is_running: boolean; socket_path: string }>("get_native_engine_status"),
+  shareContainerLive: (id: string, port: number) =>
+    callTauri<string>("share_container_live", { id, port }),
+  stopContainerShare: (id: string) =>
+    callTauri<void>("stop_container_share", { id }),
+  getActiveTunnels: () =>
+    callTauri<Record<string, string>>("get_active_tunnels"),
+  getSavedProjects: () =>
+    callTauri<import("./types").SavedProject[]>("get_saved_projects"),
+  removeSavedProject: (path: string) =>
+    callTauri<void>("remove_saved_project", { path }),
   openBrowser: async (url: string) => {
     try {
       if (typeof window !== "undefined" && isTauri()) {

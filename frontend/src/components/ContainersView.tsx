@@ -10,6 +10,10 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  Globe,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import { ContainerItem, groupContainers, ContainerGroup } from "../types";
 import { api } from "../api";
@@ -35,6 +39,12 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+  // Share Live Modal State
+  const [shareTarget, setShareTarget] = useState<ContainerItem | null>(null);
+  const [isSharingLoading, setIsSharingLoading] = useState(false);
+  const [activeTunnelUrl, setActiveTunnelUrl] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -57,6 +67,44 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
 
   const handleRemoveGroup = (group: ContainerGroup) => {
     group.services.forEach((s) => onRemove(s.id, true));
+  };
+
+  const handleOpenShare = async (c: ContainerItem) => {
+    setShareTarget(c);
+    setIsCopied(false);
+
+    if (c.public_url) {
+      setActiveTunnelUrl(c.public_url);
+      return;
+    }
+
+    const port = c.ports[0]?.public_port || c.ports[0]?.private_port || 3000;
+    setIsSharingLoading(true);
+    setActiveTunnelUrl(null);
+    try {
+      const url = await api.shareContainerLive(c.id, port);
+      setActiveTunnelUrl(url);
+    } catch (err) {
+      console.error("Failed to generate live public URL:", err);
+    } finally {
+      setIsSharingLoading(false);
+    }
+  };
+
+  const handleStopShare = async (id: string) => {
+    try {
+      await api.stopContainerShare(id);
+      setActiveTunnelUrl(null);
+      setShareTarget(null);
+    } catch (err) {
+      console.error("Failed to stop public share:", err);
+    }
+  };
+
+  const handleCopy = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const allGroups = groupContainers(containers);
@@ -89,7 +137,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search containers or stacks..."
+            placeholder="Search containers or persistent stacks..."
             className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-brand-500 transition shadow-sm"
           />
         </div>
@@ -138,7 +186,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
               No containers or stacks match your criteria
             </p>
             <p className="text-xs text-zinc-500 mt-1">
-              Launch a new project or adjust your filter.
+              Launch a new project or adjust your filter. History is saved automatically across restarts.
             </p>
           </div>
         ) : (
@@ -146,9 +194,9 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
             <thead className="bg-zinc-100 dark:bg-zinc-950/80 text-zinc-600 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
               <tr>
                 <th className="px-5 py-3.5">APPLICATION & SERVICES</th>
-                <th className="px-5 py-3.5">STACK / IMAGE</th>
+                <th className="px-5 py-3.5">STACK / RUNTIME</th>
                 <th className="px-5 py-3.5">STATUS</th>
-                <th className="px-5 py-3.5">PORT MAPPINGS</th>
+                <th className="px-5 py-3.5">PORT / LIVE PUBLIC URL</th>
                 <th className="px-5 py-3.5 text-right">ACTIONS</th>
               </tr>
             </thead>
@@ -157,6 +205,9 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                 const isExpanded = expandedGroups[g.key] ?? true;
 
                 if (g.isGroup) {
+                  const runningSvc = g.services.find((s) => s.is_running && s.ports.length > 0);
+                  const hasLiveUrl = g.services.some((s) => s.public_url);
+
                   return (
                     <React.Fragment key={g.key}>
                       {/* Master Project Stack Row */}
@@ -189,7 +240,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                                 </span>
                               </div>
                               <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                Unified Application Sandbox
+                                Persistent Sandboxed Environment
                               </span>
                             </div>
                           </div>
@@ -215,9 +266,9 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                           </span>
                         </td>
 
-                        {/* Combined Ports */}
+                        {/* Combined Ports & Live URL */}
                         <td className="px-5 py-4">
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             {g.ports.map((p, idx) => {
                               const pNum = p.public_port || p.private_port;
                               return (
@@ -232,10 +283,26 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                                 </button>
                               );
                             })}
+
+                            {/* Live Public URL badge */}
+                            {g.is_running && runningSvc && (
+                              <button
+                                onClick={() => handleOpenShare(runningSvc)}
+                                title="Share with clients over Public Internet"
+                                className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold transition shadow-sm ${
+                                  hasLiveUrl
+                                    ? "bg-emerald-500 text-white hover:bg-emerald-600 animate-pulse"
+                                    : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700"
+                                }`}
+                              >
+                                <Globe className="w-3 h-3" />
+                                <span>{hasLiveUrl ? "Live Public" : "Share Live"}</span>
+                              </button>
+                            )}
                           </div>
                         </td>
 
-                        {/* Master Actions (Plays/Stops all services in 1-click) */}
+                        {/* Master Actions */}
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
                             <button
@@ -330,7 +397,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                               </td>
 
                               <td className="px-5 py-2.5">
-                                <div className="flex flex-wrap gap-1">
+                                <div className="flex flex-wrap items-center gap-1">
                                   {c.ports.map((p, idx) => {
                                     const pNum = p.public_port || p.private_port;
                                     return (
@@ -345,6 +412,21 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                                       </button>
                                     );
                                   })}
+
+                                  {c.is_running && c.ports.length > 0 && (
+                                    <button
+                                      onClick={() => handleOpenShare(c)}
+                                      title="Share service publicly"
+                                      className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-semibold transition ${
+                                        c.public_url
+                                          ? "bg-emerald-500 text-white"
+                                          : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+                                      }`}
+                                    >
+                                      <Globe className="w-2.5 h-2.5" />
+                                      <span>{c.public_url ? "Live" : "Share"}</span>
+                                    </button>
+                                  )}
                                 </div>
                               </td>
 
@@ -395,7 +477,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                       <div className="flex items-center space-x-3">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            c.is_running ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-600"
+                            c.is_running ? "bg-emerald-500 shadow-sm shadow-emerald-500/50 animate-pulse" : "bg-zinc-400 dark:bg-zinc-600"
                           }`}
                         />
                         <div>
@@ -431,7 +513,7 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                       {c.ports.length === 0 ? (
                         <span className="text-zinc-400 dark:text-zinc-500">-</span>
                       ) : (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {c.ports.map((p, idx) => {
                             const pNum = p.public_port || p.private_port;
                             return (
@@ -446,6 +528,21 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                               </button>
                             );
                           })}
+
+                          {c.is_running && (
+                            <button
+                              onClick={() => handleOpenShare(c)}
+                              title="Share container over Public Internet"
+                              className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold transition shadow-sm ${
+                                c.public_url
+                                  ? "bg-emerald-500 text-white hover:bg-emerald-600 animate-pulse"
+                                  : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700"
+                              }`}
+                            >
+                              <Globe className="w-3 h-3" />
+                              <span>{c.public_url ? "Live" : "Share Live"}</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
@@ -503,7 +600,124 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
           </table>
         )}
       </div>
+
+      {/* Live Public URL Sharing Modal */}
+      {shareTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in select-none">
+          <div className="glass-panel w-full max-w-lg rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 space-y-5 bg-white dark:bg-zinc-950">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 rounded-xl bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+                    Share Container Live
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Instant secure public internet access for clients & teams
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShareTarget(null)}
+                className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Target Container Info */}
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs">
+              <div>
+                <span className="font-bold text-zinc-900 dark:text-white block">
+                  {shareTarget.name}
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
+                  Local Port: :{shareTarget.ports[0]?.public_port || shareTarget.ports[0]?.private_port || 3000}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] border border-emerald-500/20">
+                ● Sandbox Active
+              </span>
+            </div>
+
+            {/* Live Tunnel URL Box */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                <span>Public HTTPS URL</span>
+                {activeTunnelUrl && (
+                  <span className="text-[10px] text-emerald-500 font-semibold flex items-center space-x-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+                    <span>Live on Cloudflare / Edge CDN</span>
+                  </span>
+                )}
+              </label>
+
+              {isSharingLoading ? (
+                <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center space-x-2 text-zinc-500 text-xs">
+                  <RotateCw className="w-4 h-4 animate-spin text-brand-500" />
+                  <span>Spawning secure public tunnel...</span>
+                </div>
+              ) : activeTunnelUrl ? (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={activeTunnelUrl}
+                    className="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-xl text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none select-all"
+                  />
+                  <button
+                    onClick={() => handleCopy(activeTunnelUrl)}
+                    title="Copy Public URL"
+                    className="px-3 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold transition flex items-center space-x-1 shadow-sm"
+                  >
+                    {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{isCopied ? "Copied!" : "Copy"}</span>
+                  </button>
+                  <button
+                    onClick={() => api.openBrowser(activeTunnelUrl)}
+                    title="Open in Browser"
+                    className="p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl border border-zinc-300 dark:border-zinc-700 transition shadow-sm"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 text-xs text-center">
+                  Could not establish tunnel. Please ensure network connectivity.
+                </div>
+              )}
+            </div>
+
+            {/* Explanatory Info */}
+            <div className="p-3 bg-brand-500/5 rounded-xl border border-brand-500/10 text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
+              💡 <strong>Client Sharing Tip:</strong> Send this public link to your client or tester on any device (phone, laptop, iPad). They can preview your live app without installing anything!
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between pt-2">
+              {activeTunnelUrl ? (
+                <button
+                  onClick={() => handleStopShare(shareTarget.id)}
+                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold border border-red-500/20 transition"
+                >
+                  Stop Public Sharing
+                </button>
+              ) : (
+                <div />
+              )}
+              <button
+                onClick={() => setShareTarget(null)}
+                className="px-4 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-semibold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

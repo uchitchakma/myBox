@@ -20,6 +20,21 @@ export interface ContainerItem {
   memory_percent: number;
   is_running: boolean;
   project_name?: string;
+  project_path?: string;
+  public_url?: string;
+}
+
+export interface SavedProject {
+  id: string;
+  name: string;
+  path: string;
+  framework_id: string;
+  framework_name: string;
+  default_port: number;
+  created_at: number;
+  last_launched_at: number;
+  is_running: boolean;
+  public_url?: string;
 }
 
 export interface ImageItem {
