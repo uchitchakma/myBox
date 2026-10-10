@@ -161,35 +161,31 @@ impl NativeRunner {
             let port = crate::detector::FrameworkDetector::find_available_port(preferred);
 
             // Intelligently resolve robust native execution command
-            if cmd == "mybox up" || cmd.is_empty() || cmd.contains("apache2") || cmd.contains("apache") || cmd.contains("nginx") || cmd.contains("php artisan") {
-                if root.join("artisan").exists() {
-                    cmd = format!("php artisan serve --host=0.0.0.0 --port={}", port);
-                } else if root.join("wp-config.php").exists() || root.join("index.php").exists() || root.join("wp-content").is_dir() {
-                    cmd = format!("php -S 0.0.0.0:{}", port);
-                } else if root.join("package.json").exists() {
-                    let pkg = std::fs::read_to_string(root.join("package.json")).unwrap_or_default().to_lowercase();
-                    if pkg.contains("\"next\"") || root.join("next.config.js").exists() || root.join("next.config.ts").exists() || root.join("next.config.mjs").exists() {
-                        cmd = format!("npx next dev -p {}", port);
-                    } else if pkg.contains("\"dev\"") {
-                        cmd = format!("npm run dev -- --port {} --host || npm run dev -p {} || npm start", port, port);
-                    } else {
-                        cmd = "npm start".to_string();
-                    }
-                } else if root.join("Cargo.toml").exists() {
-                    cmd = "cargo run".to_string();
-                } else if root.join("go.mod").exists() || root.join("main.go").exists() {
-                    cmd = "go run .".to_string();
-                } else if root.join("manage.py").exists() {
-                    cmd = format!("python3 manage.py runserver 0.0.0.0:{}", port);
-                } else if root.join("main.py").exists() || root.join("app.py").exists() {
-                    cmd = "python3 main.py || python3 app.py".to_string();
-                } else if root.join("index.html").exists() {
-                    cmd = format!("python3 -m http.server {}", port);
-                } else {
-                    cmd = format!("python3 -m http.server {}", port);
+            if root.join("package.json").exists() {
+                let pkg = std::fs::read_to_string(root.join("package.json")).unwrap_or_default().to_lowercase();
+                if pkg.contains("\"next\"") || root.join("next.config.js").exists() || root.join("next.config.ts").exists() || root.join("next.config.mjs").exists() {
+                    cmd = format!("npx next dev -p {}", port);
+                } else if pkg.contains("\"dev\"") {
+                    cmd = format!("npm run dev -- --port {} --host || npm run dev -p {} || npm start", port, port);
+                } else if cmd == "mybox up" || cmd.is_empty() || cmd.contains("npm start") || cmd.contains("npm install") {
+                    cmd = format!("npm start -- -p {}", port);
                 }
-            } else if (root.join("wp-config.php").exists() || root.join("index.php").exists()) && !cmd.contains("php -S") {
+            } else if root.join("wp-config.php").exists() || root.join("index.php").exists() || root.join("wp-content").is_dir() {
                 cmd = format!("php -S 0.0.0.0:{}", port);
+            } else if root.join("artisan").exists() {
+                cmd = format!("php artisan serve --host=0.0.0.0 --port={}", port);
+            } else if root.join("Cargo.toml").exists() {
+                cmd = "cargo run".to_string();
+            } else if root.join("go.mod").exists() || root.join("main.go").exists() {
+                cmd = "go run .".to_string();
+            } else if root.join("manage.py").exists() {
+                cmd = format!("python3 manage.py runserver 0.0.0.0:{}", port);
+            } else if root.join("main.py").exists() || root.join("app.py").exists() {
+                cmd = "python3 main.py || python3 app.py".to_string();
+            } else if root.join("index.html").exists() {
+                cmd = format!("python3 -m http.server {}", port);
+            } else if cmd == "mybox up" || cmd.is_empty() {
+                cmd = format!("python3 -m http.server {}", port);
             }
 
             let svc_id = format!("native-app-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
@@ -278,23 +274,6 @@ pub fn get_system_path() -> String {
         let logs = Arc::new(Mutex::new(Vec::new()));
         let logs_clone = logs.clone();
         let svc_name = name.clone();
-
-        // 1. Clean up any stale/orphaned processes listening on this port before starting
-        #[cfg(unix)]
-        if port > 0 {
-            if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &format!(":{}", port)]).output() {
-                let pids_str = String::from_utf8_lossy(&out.stdout);
-                for p in pids_str.split_whitespace() {
-                    if let Ok(p_num) = p.parse::<u32>() {
-                        if p_num != std::process::id() {
-                            let _ = std::process::Command::new("kill").args(["-9", &p_num.to_string()]).output();
-                        }
-                    }
-                }
-            }
-            // Small pause to allow OS socket cleanup
-            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-        }
 
         // Prepare shell command with rich PATH environment
         let enhanced_path = Self::get_system_path();

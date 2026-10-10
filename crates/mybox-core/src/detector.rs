@@ -7,8 +7,31 @@ impl FrameworkDetector {
     /// Probe host OS for the next available non-conflicting port
     pub fn find_available_port(preferred: u16) -> u16 {
         let mut port = preferred;
-        for _ in 0..50 {
-            if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
+        for _ in 0..100 {
+            let mut is_free = true;
+
+            // 1. Probe 127.0.0.1
+            if std::net::TcpListener::bind(("127.0.0.1", port)).is_err() {
+                is_free = false;
+            }
+
+            // 2. Probe 0.0.0.0
+            if is_free && std::net::TcpListener::bind(("0.0.0.0", port)).is_err() {
+                is_free = false;
+            }
+
+            // 3. Probe with lsof on Unix/macOS to ensure no background daemons are listening
+            #[cfg(unix)]
+            if is_free {
+                if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &format!(":{}", port)]).output() {
+                    let pids = String::from_utf8_lossy(&out.stdout);
+                    if !pids.trim().is_empty() {
+                        is_free = false;
+                    }
+                }
+            }
+
+            if is_free {
                 return port;
             }
             port += 1;
@@ -35,12 +58,15 @@ impl FrameworkDetector {
                 .and_then(|n| n.to_str())
                 .unwrap_or("myBox Project")
                 .to_string();
+
+            let target_port = Self::find_available_port(3000);
+
             return DetectedProject {
                 framework_id: "custom_mybox".into(),
                 name: folder_name,
                 category: "Custom Configuration".into(),
                 description: format!("Existing {} configuration detected in project root", file_name),
-                default_port: 3000,
+                default_port: target_port,
                 icon: "custom".into(),
                 runtime_image: "custom".into(),
                 start_command: "mybox up".into(),
