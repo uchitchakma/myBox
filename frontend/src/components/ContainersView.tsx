@@ -72,15 +72,27 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
   const handleOpenShare = async (c: ContainerItem) => {
     setShareTarget(c);
     setIsCopied(false);
+    setIsSharingLoading(true);
+    setActiveTunnelUrl(c.public_url || null);
+
+    // If container is offline/exited, auto-start it first!
+    if (!c.is_running) {
+      try {
+        await onStart(c.id);
+        // Small pause to allow port binding
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      } catch (err) {
+        console.error("Failed to auto-start container before sharing:", err);
+      }
+    }
 
     if (c.public_url) {
       setActiveTunnelUrl(c.public_url);
+      setIsSharingLoading(false);
       return;
     }
 
     const port = c.ports[0]?.public_port || c.ports[0]?.private_port || 3000;
-    setIsSharingLoading(true);
-    setActiveTunnelUrl(null);
     try {
       const url = await api.shareContainerLive(c.id, port);
       setActiveTunnelUrl(url);
@@ -305,6 +317,20 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                         {/* Master Actions */}
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
+                            {/* 🌐 Share Live Button */}
+                            <button
+                              onClick={() => handleOpenShare(g.services[0])}
+                              title="Generate Live Public Link for Client"
+                              className={`inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-sm ${
+                                hasLiveUrl
+                                  ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/30 animate-pulse"
+                                  : "bg-brand-500/10 hover:bg-brand-500/20 text-brand-500 dark:text-brand-400 border border-brand-500/20"
+                              }`}
+                            >
+                              <Globe className="w-3.5 h-3.5" />
+                              <span>{hasLiveUrl ? "Live URL" : "Share Live"}</span>
+                            </button>
+
                             <button
                               onClick={() => onOpenLogs(g.services[0])}
                               title="View Application Logs"
@@ -510,45 +536,52 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                     </td>
 
                     <td className="px-5 py-3.5">
-                      {c.ports.length === 0 ? (
-                        <span className="text-zinc-400 dark:text-zinc-500">-</span>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {c.ports.map((p, idx) => {
-                            const pNum = p.public_port || p.private_port;
-                            return (
-                              <button
-                                key={idx}
-                                onClick={() => api.openBrowser(`http://localhost:${pNum}`)}
-                                title={`Open http://localhost:${pNum} in Browser`}
-                                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 hover:text-brand-500 dark:text-zinc-300 dark:hover:text-brand-400 border border-zinc-200 dark:border-zinc-800 text-[10px] font-mono transition shadow-sm"
-                              >
-                                <span>:{pNum}</span>
-                                <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                              </button>
-                            );
-                          })}
-
-                          {c.is_running && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {c.ports.map((p, idx) => {
+                          const pNum = p.public_port || p.private_port;
+                          return (
                             <button
-                              onClick={() => handleOpenShare(c)}
-                              title="Share container over Public Internet"
-                              className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-semibold transition shadow-sm ${
-                                c.public_url
-                                  ? "bg-emerald-500 text-white hover:bg-emerald-600 animate-pulse"
-                                  : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700"
-                              }`}
+                              key={idx}
+                              onClick={() => api.openBrowser(`http://localhost:${pNum}`)}
+                              title={`Open http://localhost:${pNum} in Browser`}
+                              className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 hover:text-brand-500 dark:text-zinc-300 dark:hover:text-brand-400 border border-zinc-200 dark:border-zinc-800 text-[10px] font-mono transition shadow-sm"
                             >
-                              <Globe className="w-3 h-3" />
-                              <span>{c.public_url ? "Live" : "Share Live"}</span>
+                              <span>:{pNum}</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
                             </button>
-                          )}
-                        </div>
-                      )}
+                          );
+                        })}
+
+                        {c.public_url && (
+                          <button
+                            onClick={() => handleOpenShare(c)}
+                            title="Container is Live on Internet! Click to view/copy client link"
+                            className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold animate-pulse shadow-sm"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>🌐 Live Public</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-70 ml-0.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end space-x-1.5">
+                        {/* 🌐 1-Click Share Live Button */}
+                        <button
+                          onClick={() => handleOpenShare(c)}
+                          title="Generate instant public HTTPS preview link for clients"
+                          className={`inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-sm ${
+                            c.public_url
+                              ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/30 animate-pulse"
+                              : "bg-brand-500/10 hover:bg-brand-500/20 text-brand-500 dark:text-brand-400 border border-brand-500/20"
+                          }`}
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                          <span>{c.public_url ? "Live URL" : "Share Live"}</span>
+                        </button>
+
                         <button
                           onClick={() => onOpenLogs(c)}
                           title="View Logs"
@@ -578,9 +611,10 @@ export const ContainersView: React.FC<ContainersViewProps> = ({
                           <button
                             onClick={() => onStart(c.id)}
                             title="Start Container"
-                            className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition"
+                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition font-bold text-xs"
                           >
                             <Play className="w-3.5 h-3.5" />
+                            <span>Run</span>
                           </button>
                         )}
 

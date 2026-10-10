@@ -160,9 +160,13 @@ impl NativeRunner {
             let preferred = if detected.default_port > 0 { detected.default_port } else { 3000 };
             let port = crate::detector::FrameworkDetector::find_available_port(preferred);
 
-            if cmd == "mybox up" || cmd.is_empty() || cmd.contains("npm start") {
-                // Fallback to real framework runner command
-                if root.join("package.json").exists() {
+            // Intelligently resolve robust native execution command
+            if cmd == "mybox up" || cmd.is_empty() || cmd.contains("apache2") || cmd.contains("apache") || cmd.contains("nginx") || cmd.contains("php artisan") {
+                if root.join("artisan").exists() {
+                    cmd = format!("php artisan serve --host=0.0.0.0 --port={}", port);
+                } else if root.join("wp-config.php").exists() || root.join("index.php").exists() || root.join("wp-content").is_dir() {
+                    cmd = format!("php -S 0.0.0.0:{}", port);
+                } else if root.join("package.json").exists() {
                     let pkg = std::fs::read_to_string(root.join("package.json")).unwrap_or_default().to_lowercase();
                     if pkg.contains("\"next\"") || root.join("next.config.js").exists() || root.join("next.config.ts").exists() || root.join("next.config.mjs").exists() {
                         cmd = format!("npx next dev -p {}", port);
@@ -179,13 +183,13 @@ impl NativeRunner {
                     cmd = format!("python3 manage.py runserver 0.0.0.0:{}", port);
                 } else if root.join("main.py").exists() || root.join("app.py").exists() {
                     cmd = "python3 main.py || python3 app.py".to_string();
-                } else if root.join("index.php").exists() || root.join("wp-config.php").exists() {
-                    cmd = format!("php -S 0.0.0.0:{}", port);
                 } else if root.join("index.html").exists() {
                     cmd = format!("python3 -m http.server {}", port);
                 } else {
                     cmd = format!("python3 -m http.server {}", port);
                 }
+            } else if (root.join("wp-config.php").exists() || root.join("index.php").exists()) && !cmd.contains("php -S") {
+                cmd = format!("php -S 0.0.0.0:{}", port);
             }
 
             let svc_id = format!("native-app-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 1_000_000);
@@ -229,7 +233,7 @@ impl NativeRunner {
         }
     }
 
-fn get_system_path() -> String {
+pub fn get_system_path() -> String {
     let mut parts: Vec<String> = Vec::new();
     if let Ok(home) = std::env::var("HOME") {
         parts.push(format!("{}/.local/bin", home));
@@ -556,10 +560,21 @@ fn get_system_path() -> String {
             let name = svc.name.clone();
             let role = svc.role.clone();
             let runtime_label = svc.runtime_label.clone();
-            let cmd = svc.command.clone();
+            let mut cmd = svc.command.clone();
             let dir = svc.working_dir.clone();
             let project = svc.project_path.clone();
             let port = crate::detector::FrameworkDetector::find_available_port(if svc.port > 0 { svc.port } else { 3000 });
+
+            if cmd.contains("apache2") || cmd.contains("apache") || cmd.is_empty() || cmd == "mybox up" {
+                if dir.join("wp-config.php").exists() || dir.join("index.php").exists() {
+                    cmd = format!("php -S 0.0.0.0:{}", port);
+                } else if dir.join("package.json").exists() {
+                    cmd = format!("npm run dev -- --port {} --host || npm start", port);
+                } else {
+                    cmd = format!("python3 -m http.server {}", port);
+                }
+            }
+
             let mut envs = svc.env_vars.clone();
             for (k, v) in envs.iter_mut() {
                 if k == "PORT" {

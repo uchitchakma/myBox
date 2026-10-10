@@ -97,11 +97,23 @@ impl TunnelManager {
         anyhow::bail!("Failed to generate public URL. Please ensure internet connectivity is available.")
     }
 
+    fn get_cloudflared_path() -> String {
+        if std::path::Path::new("/opt/homebrew/bin/cloudflared").exists() {
+            "/opt/homebrew/bin/cloudflared".to_string()
+        } else if std::path::Path::new("/usr/local/bin/cloudflared").exists() {
+            "/usr/local/bin/cloudflared".to_string()
+        } else {
+            "cloudflared".to_string()
+        }
+    }
+
     async fn spawn_cloudflared(port: u16) -> Result<(String, Child)> {
-        let mut cmd = Command::new("cloudflared");
+        let cf_bin = Self::get_cloudflared_path();
+        let mut cmd = Command::new(cf_bin);
         cmd.args(["tunnel", "--url", &format!("http://127.0.0.1:{}", port), "--no-autoupdate"])
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .env("PATH", crate::native_runner::NativeRunner::get_system_path());
 
         let mut child = cmd.spawn().context("Failed to spawn cloudflared")?;
         let stderr = child.stderr.take().context("No stderr")?;
@@ -113,8 +125,9 @@ impl TunnelManager {
             while let Ok(Some(line)) = reader.next_line().await {
                 if line.contains("trycloudflare.com") {
                     for word in line.split_whitespace() {
-                        if word.starts_with("https://") && word.contains("trycloudflare.com") {
-                            let _ = tx.send(word.trim().to_string()).await;
+                        let clean = word.trim_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '/' && c != '.' && c != '-');
+                        if clean.starts_with("https://") && clean.contains("trycloudflare.com") {
+                            let _ = tx.send(clean.to_string()).await;
                             return;
                         }
                     }
@@ -122,7 +135,7 @@ impl TunnelManager {
             }
         });
 
-        match tokio::time::timeout(std::time::Duration::from_secs(8), rx.recv()).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(15), rx.recv()).await {
             Ok(Some(url)) => Ok((url, child)),
             _ => {
                 let _ = child.kill().await;
@@ -143,7 +156,8 @@ impl TunnelManager {
             "--", "--no-inject-http-auth"
         ])
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stderr(Stdio::piped())
+        .env("PATH", crate::native_runner::NativeRunner::get_system_path());
 
         let mut child = cmd.spawn().context("Failed to spawn ssh tunnel")?;
         let stdout = child.stdout.take().context("No stdout")?;
@@ -155,8 +169,9 @@ impl TunnelManager {
             while let Ok(Some(line)) = reader.next_line().await {
                 if line.contains("https://") {
                     for word in line.split_whitespace() {
-                        if word.starts_with("https://") && (word.contains(".lhrtunnel.pro") || word.contains(".lhr.life") || word.contains(".localhost.run")) {
-                            let _ = tx.send(word.trim().to_string()).await;
+                        let clean = word.trim_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '/' && c != '.' && c != '-');
+                        if clean.starts_with("https://") && (clean.contains(".lhrtunnel.pro") || clean.contains(".lhr.life") || clean.contains(".localhost.run")) {
+                            let _ = tx.send(clean.to_string()).await;
                             return;
                         }
                     }
@@ -164,7 +179,7 @@ impl TunnelManager {
             }
         });
 
-        match tokio::time::timeout(std::time::Duration::from_secs(8), rx.recv()).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(15), rx.recv()).await {
             Ok(Some(url)) => Ok((url, child)),
             _ => {
                 let _ = child.kill().await;
@@ -177,7 +192,8 @@ impl TunnelManager {
         let mut cmd = Command::new("npx");
         cmd.args(["--yes", "localtunnel", "--port", &port.to_string()])
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .env("PATH", crate::native_runner::NativeRunner::get_system_path());
 
         let mut child = cmd.spawn().context("Failed to spawn localtunnel")?;
         let stdout = child.stdout.take().context("No stdout")?;
