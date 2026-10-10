@@ -53,17 +53,30 @@ Unlike bloated alternatives that consume 1GB+ of idle RAM, **myBox** is written 
 | :---: |
 | <img src="docs/screenshots/system-stats.png" alt="System Stats & Host Diagnostics" width="100%" /> |
 
----
-
 ## 📦 Downloads & Installation
 
 Get the latest production release directly from [**GitHub Releases**](https://github.com/uchitchakma/myBox/releases):
 
+### 1. Desktop App Installers
 | Operating System | Architecture | Package Format | Direct Download |
 | :--- | :--- | :--- | :--- |
 | 🍏 **macOS** | **Universal (All Macs)** | `.dmg` / `.zip` | [⬇️ **Download for macOS**](https://github.com/uchitchakma/myBox/releases/latest) |
 | 🪟 **Windows** | **64-bit (Windows 10/11)** | `.msi` / `.exe` | [⬇️ **Download for Windows**](https://github.com/uchitchakma/myBox/releases/latest) |
 | 🐧 **Linux** | **Debian / Ubuntu / Fedora** | `.deb` / `.AppImage` | [⬇️ **Download for Linux**](https://github.com/uchitchakma/myBox/releases/latest) |
+
+### 2. Standalone Terminal CLI Installation
+Install the `mybox` command line tool globally to your terminal:
+```bash
+# Option A: Install via Cargo
+cargo install --git https://github.com/uchitchakma/myBox.git mybox-cli
+
+# Option B: Direct install to /usr/local/bin from source
+cargo build --release -p mybox-cli
+sudo cp target/release/mybox /usr/local/bin/
+
+# Verify installation
+mybox --help
+```
 
 ---
 
