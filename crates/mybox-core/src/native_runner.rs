@@ -40,6 +40,53 @@ impl NativeRunner {
         })
     }
 
+    /// Clean up any stale lock files or orphaned background processes belonging strictly to this project directory
+    pub fn cleanup_project_stale_state(project_path: &Path) {
+        // 1. Next.js Turbopack lock file cleanup and stale PID termination
+        let next_lock = project_path.join(".next").join("dev").join("lock");
+        if next_lock.exists() {
+            if let Ok(content) = std::fs::read_to_string(&next_lock) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(pid_u64) = val.get("pid").and_then(|p| p.as_u64()) {
+                        let pid = pid_u64 as u32;
+                        #[cfg(unix)]
+                        if pid > 1 && pid != std::process::id() {
+                            let _ = std::process::Command::new("kill").args(["-TERM", &format!("-{}", pid)]).output();
+                            let _ = std::process::Command::new("kill").args(["-TERM", &pid.to_string()]).output();
+                            let _ = std::process::Command::new("kill").args(["-KILL", &format!("-{}", pid)]).output();
+                            let _ = std::process::Command::new("kill").args(["-KILL", &pid.to_string()]).output();
+                        }
+                    }
+                }
+            }
+            let _ = std::fs::remove_file(&next_lock);
+        }
+
+        // 2. Terminate any orphan or leftover process running from this exact project directory
+        #[cfg(unix)]
+        if let Some(path_str) = project_path.to_str() {
+            let current_pid = std::process::id();
+            if let Ok(out) = std::process::Command::new("lsof").args(["+D", path_str, "-t"]).output() {
+                let pids_str = String::from_utf8_lossy(&out.stdout);
+                for line in pids_str.lines() {
+                    if let Ok(pid) = line.trim().parse::<u32>() {
+                        if pid > 1 && pid != current_pid {
+                            if let Ok(cwd_out) = std::process::Command::new("lsof").args(["-p", &pid.to_string()]).output() {
+                                let cwd_str = String::from_utf8_lossy(&cwd_out.stdout);
+                                if cwd_str.contains("cwd") && cwd_str.contains(path_str) {
+                                    log::info!("myBox: Cleaned up stale project process PID {} for {}", pid, path_str);
+                                    let _ = std::process::Command::new("kill").args(["-TERM", &format!("-{}", pid)]).output();
+                                    let _ = std::process::Command::new("kill").args(["-KILL", &format!("-{}", pid)]).output();
+                                    let _ = std::process::Command::new("kill").args(["-KILL", &pid.to_string()]).output();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Launch all detected project services natively on the host OS
     pub async fn launch_project_natively(
         project_path: &str,
@@ -51,7 +98,8 @@ impl NativeRunner {
             anyhow::bail!("Project directory does not exist: {}", project_path);
         }
 
-        // Stop and clean up any previously running native services for this project first
+        // Stop and clean up any previously running native services or lockfiles for this project first
+        Self::cleanup_project_stale_state(root);
         let _ = runner.stop_all_for_project(project_path).await;
         {
             let mut services = runner.services.write().await;
@@ -468,13 +516,50 @@ pub fn get_system_path() -> String {
             if !already_listed {
                 let p_id = format!("saved-{}", p.id);
                 let short_id = p_id.chars().take(12).collect::<String>();
+                let mut is_running = false;
+                let mut active_pid = None;
+                let mut cpu = 0.0;
+                let mut mem_mb = 0.0;
+
+                #[cfg(unix)]
+                if p.default_port > 0 {
+                    if let Ok(out) = std::process::Command::new("lsof").args(["-ti", &format!(":{}", p.default_port)]).output() {
+                        let pids_str = String::from_utf8_lossy(&out.stdout);
+                        if let Some(first_pid_str) = pids_str.split_whitespace().next() {
+                            if let Ok(actual_pid) = first_pid_str.parse::<u32>() {
+                                if let Ok(cwd_out) = std::process::Command::new("lsof").args(["-p", &actual_pid.to_string()]).output() {
+                                    let cwd_str = String::from_utf8_lossy(&cwd_out.stdout);
+                                    if cwd_str.contains("cwd") && cwd_str.contains(&p.path) {
+                                        is_running = true;
+                                        active_pid = Some(actual_pid);
+                                        let p_sys = sysinfo::Pid::from_u32(actual_pid);
+                                        if let Some(proc_info) = sys.process(p_sys) {
+                                            cpu = proc_info.cpu_usage() as f64;
+                                            mem_mb = (proc_info.memory() as f64) / (1024.0 * 1024.0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let status_label = if is_running {
+                    format!("Running (Native PID {})", active_pid.unwrap_or(0))
+                } else {
+                    "Saved Project (Ready to Launch)".to_string()
+                };
+
+                let state_label = if is_running { "running" } else { "exited" };
+                let public_url = crate::tunnel::TunnelManager::global().get_tunnel_url(&p_id).await;
+
                 items.push(ContainerItem {
                     id: p_id,
                     short_id,
                     name: p.name.clone(),
                     image: format!("native:{}", p.framework_id),
-                    state: "exited".to_string(),
-                    status: "Saved Project (Ready to Launch)".to_string(),
+                    state: state_label.to_string(),
+                    status: status_label,
                     created: p.created_at,
                     ports: vec![PortMapping {
                         ip: Some("127.0.0.1".to_string()),
@@ -482,14 +567,14 @@ pub fn get_system_path() -> String {
                         public_port: Some(p.default_port),
                         proto: "tcp".to_string(),
                     }],
-                    cpu_usage: 0.0,
-                    memory_usage_mb: 0.0,
+                    cpu_usage: (cpu * 10.0).round() / 10.0,
+                    memory_usage_mb: (mem_mb * 10.0).round() / 10.0,
                     memory_limit_mb: 2048.0,
-                    memory_percent: 0.0,
-                    is_running: false,
+                    memory_percent: ((mem_mb / 2048.0) * 100.0 * 10.0).round() / 10.0,
+                    is_running,
                     project_name: Some(p.name.clone()),
                     project_path: Some(p.path.clone()),
-                    public_url: None,
+                    public_url,
                 });
             }
         }
@@ -500,6 +585,7 @@ pub fn get_system_path() -> String {
     pub async fn stop_service(&self, id: &str) -> Result<()> {
         let mut services = self.services.write().await;
         if let Some(svc) = services.get_mut(id) {
+            let p_path = PathBuf::from(&svc.project_path);
             #[cfg(unix)]
             {
                 if let Some(pid) = svc.pid {
@@ -515,6 +601,8 @@ pub fn get_system_path() -> String {
                     let _ = std::process::Command::new("taskkill").args(["/PID", &pid.to_string(), "/F", "/T"]).output();
                 }
             }
+
+            Self::cleanup_project_stale_state(&p_path);
 
             svc.is_running = false;
             svc.pid = None;
@@ -535,7 +623,11 @@ pub fn get_system_path() -> String {
             let mut cmd = svc.command.clone();
             let dir = svc.working_dir.clone();
             let project = svc.project_path.clone();
-            let port = crate::detector::FrameworkDetector::find_available_port(if svc.port > 0 { svc.port } else { 3000 });
+
+            Self::cleanup_project_stale_state(&dir);
+
+            let preferred = if svc.port > 0 && svc.port <= 3005 { 3000 } else { svc.port };
+            let port = crate::detector::FrameworkDetector::find_available_port(preferred);
 
             if dir.join("package.json").exists() {
                 let pkg = std::fs::read_to_string(dir.join("package.json")).unwrap_or_default().to_lowercase();
@@ -588,6 +680,7 @@ pub fn get_system_path() -> String {
     }
 
     pub async fn stop_all_for_project(&self, project_path: &str) -> Result<String> {
+        Self::cleanup_project_stale_state(Path::new(project_path));
         let mut services = self.services.write().await;
         let mut stopped = 0;
         for svc in services.values_mut() {
