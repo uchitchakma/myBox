@@ -117,6 +117,32 @@ async fn get_container_logs(
 }
 
 #[tauri::command]
+async fn open_logs_folder() -> Result<(), String> {
+    let log_dir = mybox_core::NativeRunner::get_log_dir();
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open").arg(&log_dir).spawn();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer").arg(&log_dir).spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(&log_dir).spawn();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn clear_container_logs(id: String) -> Result<(), String> {
+    mybox_core::NativeRunner::global()
+        .clear_logs(&id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn prune_system(state: State<'_, AppState>) -> Result<PruneResult, String> {
     let docker = state.docker.read().await;
     docker.prune_system().await.map_err(|e| e.to_string())
@@ -310,6 +336,8 @@ pub fn run() {
             get_active_tunnels,
             get_saved_projects,
             remove_saved_project,
+            open_logs_folder,
+            clear_container_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running myBox desktop application");

@@ -86,6 +86,7 @@ export interface SystemMetrics {
 export interface ContainerLogs {
   container_id: string;
   lines: string[];
+  log_file_path?: string;
 }
 
 export interface PruneResult {

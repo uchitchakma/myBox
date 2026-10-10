@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Sparkles,
   Rocket,
+  Terminal,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -28,6 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "containers", label: "Containers", icon: Box },
+    { id: "logs", label: "Logs", icon: Terminal },
     { id: "images", label: "Images", icon: Layers },
     { id: "volumes", label: "Volumes", icon: HardDrive },
     { id: "stats", label: "System Stats", icon: Activity },

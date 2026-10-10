@@ -310,6 +310,9 @@ export const api = {
     callTauri<import("./types").SavedProject[]>("get_saved_projects"),
   removeSavedProject: (path: string) =>
     callTauri<void>("remove_saved_project", { path }),
+  openLogsFolder: () => callTauri<void>("open_logs_folder"),
+  clearContainerLogs: (id: string) =>
+    callTauri<void>("clear_container_logs", { id }),
   openBrowser: async (url: string) => {
     try {
       if (typeof window !== "undefined" && isTauri()) {

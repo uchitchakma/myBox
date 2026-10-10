@@ -506,7 +506,7 @@ impl DockerEngine {
     }
 
     pub async fn get_container_logs(&self, id: &str, tail: usize) -> Result<ContainerLogs> {
-        if id.starts_with("native-") {
+        if id.starts_with("native-") || id.starts_with("saved-") || id == "all" {
             return crate::native_runner::NativeRunner::global().get_logs(id, tail).await;
         }
 
@@ -542,6 +542,7 @@ impl DockerEngine {
         Ok(ContainerLogs {
             container_id: id.to_string(),
             lines,
+            log_file_path: None,
         })
     }
 

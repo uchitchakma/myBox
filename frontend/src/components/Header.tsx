@@ -32,6 +32,10 @@ export const Header: React.FC<HeaderProps> = ({
       title: "Containers",
       desc: "Manage running and stopped application containers",
     },
+    logs: {
+      title: "Process Logs",
+      desc: "Live standard output, error streams, and persistent debug traces",
+    },
     images: {
       title: "Images",
       desc: "Locally cached container images and layers",

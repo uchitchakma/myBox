@@ -310,6 +310,41 @@ pub fn get_system_path() -> String {
     parts.join(":")
 }
 
+    pub fn get_log_dir() -> PathBuf {
+        let dir = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".mybox")
+            .join("logs");
+        let _ = std::fs::create_dir_all(&dir);
+        dir
+    }
+
+    pub fn get_service_log_path(svc_name: &str) -> PathBuf {
+        let clean = svc_name
+            .chars()
+            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+            .collect::<String>();
+        Self::get_log_dir().join(format!("{}.log", clean))
+    }
+
+    pub fn append_log_line(file_path: &Path, line: &str) {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(file_path) {
+            let _ = writeln!(f, "{}", line);
+        }
+    }
+
+    pub fn read_log_file_tail(file_path: &Path, tail: usize) -> Vec<String> {
+        if file_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(file_path) {
+                let all_lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+                let start = if all_lines.len() > tail { all_lines.len() - tail } else { 0 };
+                return all_lines[start..].to_vec();
+            }
+        }
+        Vec::new()
+    }
+
     #[allow(clippy::too_many_arguments)]
     async fn spawn_service_process(
         &self,
@@ -327,6 +362,9 @@ pub fn get_system_path() -> String {
         let logs = Arc::new(Mutex::new(Vec::new()));
         let logs_clone = logs.clone();
         let svc_name = name.clone();
+
+        let svc_log_file = Self::get_service_log_path(&name);
+        let all_log_file = Self::get_log_dir().join("mybox-all-processes.log");
 
         // Prepare shell command with rich PATH environment
         let enhanced_path = Self::get_system_path();
@@ -354,15 +392,20 @@ pub fn get_system_path() -> String {
         // Initial launch log
         {
             let timestamp = chrono::Local::now().format("%H:%M:%S");
+            let launch_msg = format!("[{}] [{}] Starting '{}' on port {}", timestamp, svc_name, command_str, port);
             if let Ok(mut l) = logs.lock() {
-                l.push(format!("[{}] [{}] Starting '{}' on port {}", timestamp, svc_name, command_str, port));
+                l.push(launch_msg.clone());
             }
+            Self::append_log_line(&svc_log_file, &launch_msg);
+            Self::append_log_line(&all_log_file, &launch_msg);
         }
 
         // Spawn stdout reader
         if let Some(stdout) = child.stdout.take() {
             let logs_out = logs_clone.clone();
             let s_name = svc_name.clone();
+            let svc_file = svc_log_file.clone();
+            let all_file = all_log_file.clone();
             tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
                 let mut lines = reader.lines();
@@ -373,8 +416,10 @@ pub fn get_system_path() -> String {
                         if l.len() > 1000 {
                             l.remove(0);
                         }
-                        l.push(entry);
+                        l.push(entry.clone());
                     }
+                    Self::append_log_line(&svc_file, &entry);
+                    Self::append_log_line(&all_file, &entry);
                 }
             });
         }
@@ -383,6 +428,8 @@ pub fn get_system_path() -> String {
         if let Some(stderr) = child.stderr.take() {
             let logs_err = logs_clone.clone();
             let s_name = svc_name.clone();
+            let svc_file = svc_log_file.clone();
+            let all_file = all_log_file.clone();
             tokio::spawn(async move {
                 let reader = BufReader::new(stderr);
                 let mut lines = reader.lines();
@@ -393,8 +440,10 @@ pub fn get_system_path() -> String {
                         if l.len() > 1000 {
                             l.remove(0);
                         }
-                        l.push(entry);
+                        l.push(entry.clone());
                     }
+                    Self::append_log_line(&svc_file, &entry);
+                    Self::append_log_line(&all_file, &entry);
                 }
             });
         }
@@ -666,17 +715,97 @@ pub fn get_system_path() -> String {
     }
 
     pub async fn get_logs(&self, id: &str, tail: usize) -> Result<ContainerLogs> {
+        // 1. "all" returns combined stream across all processes
+        if id == "all" {
+            let all_file = Self::get_log_dir().join("mybox-all-processes.log");
+            let lines = Self::read_log_file_tail(&all_file, tail);
+            return Ok(ContainerLogs {
+                container_id: "all".to_string(),
+                lines,
+                log_file_path: Some(all_file.to_string_lossy().to_string()),
+            });
+        }
+
+        // 2. Active in-memory service
         let services = self.services.read().await;
         if let Some(svc) = services.get(id) {
-            if let Ok(l) = svc.logs.lock() {
+            let svc_file = Self::get_service_log_path(&svc.name);
+            let mut lines = if let Ok(l) = svc.logs.lock() {
                 let start = if l.len() > tail { l.len() - tail } else { 0 };
-                return Ok(ContainerLogs {
-                    container_id: id.to_string(),
-                    lines: l[start..].to_vec(),
-                });
+                l[start..].to_vec()
+            } else {
+                Vec::new()
+            };
+
+            // Fallback to disk file if memory has no lines
+            if lines.is_empty() && svc_file.exists() {
+                lines = Self::read_log_file_tail(&svc_file, tail);
             }
+
+            return Ok(ContainerLogs {
+                container_id: id.to_string(),
+                lines,
+                log_file_path: Some(svc_file.to_string_lossy().to_string()),
+            });
         }
+
+        // 3. Saved / historical project by ID or project name
+        let saved_id = id.trim_start_matches("saved-");
+        let saved_projects = crate::storage::ProjectStorage::global().list_projects();
+        if let Some(p) = saved_projects.iter().find(|item| item.id == saved_id || item.id == id || format!("saved-{}", item.id) == id || item.name == id) {
+            let svc_file = Self::get_service_log_path(&p.name);
+            let lines = Self::read_log_file_tail(&svc_file, tail);
+            return Ok(ContainerLogs {
+                container_id: id.to_string(),
+                lines,
+                log_file_path: Some(svc_file.to_string_lossy().to_string()),
+            });
+        }
+
+        // 4. Try reading by direct name (e.g. "staydaze-corporate")
+        let direct_file = Self::get_service_log_path(id);
+        if direct_file.exists() {
+            let lines = Self::read_log_file_tail(&direct_file, tail);
+            return Ok(ContainerLogs {
+                container_id: id.to_string(),
+                lines,
+                log_file_path: Some(direct_file.to_string_lossy().to_string()),
+            });
+        }
+
         anyhow::bail!("Native service logs not found for: {}", id);
+    }
+
+    pub async fn clear_logs(&self, id: &str) -> Result<()> {
+        if id == "all" {
+            let all_file = Self::get_log_dir().join("mybox-all-processes.log");
+            let _ = std::fs::write(&all_file, "");
+            let services = self.services.read().await;
+            for svc in services.values() {
+                if let Ok(mut l) = svc.logs.lock() {
+                    l.clear();
+                }
+                let f = Self::get_service_log_path(&svc.name);
+                let _ = std::fs::write(&f, "");
+            }
+            return Ok(());
+        }
+
+        let services = self.services.read().await;
+        if let Some(svc) = services.get(id) {
+            if let Ok(mut l) = svc.logs.lock() {
+                l.clear();
+            }
+            let f = Self::get_service_log_path(&svc.name);
+            let _ = std::fs::write(&f, "");
+            return Ok(());
+        }
+
+        let f = Self::get_service_log_path(id);
+        if f.exists() {
+            let _ = std::fs::write(&f, "");
+        }
+        Ok(())
     }
 
     pub async fn stop_all_for_project(&self, project_path: &str) -> Result<String> {

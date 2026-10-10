@@ -7,6 +7,7 @@ import { ImagesView } from "./components/ImagesView";
 import { VolumesView } from "./components/VolumesView";
 import { StatsView } from "./components/StatsView";
 import { SettingsView } from "./components/SettingsView";
+import { LogsView } from "./components/LogsView";
 import { LogsModal } from "./components/LogsModal";
 import { AboutModal } from "./components/AboutModal";
 import { NewProjectModal } from "./components/NewProjectModal";
@@ -207,6 +208,15 @@ export function App() {
               onRestart={handleRestartContainer}
               onRemove={handleRemoveContainer}
               onOpenLogs={handleOpenLogs}
+            />
+          )}
+
+          {currentTab === "logs" && (
+            <LogsView
+              containers={containers}
+              onStart={handleStartContainer}
+              onStop={handleStopContainer}
+              onRestart={handleRestartContainer}
             />
           )}
 

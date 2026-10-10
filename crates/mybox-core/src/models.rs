@@ -100,6 +100,8 @@ pub struct EngineInfo {
 pub struct ContainerLogs {
     pub container_id: String,
     pub lines: Vec<String>,
+    #[serde(default)]
+    pub log_file_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
